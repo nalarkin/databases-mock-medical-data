@@ -10,6 +10,7 @@ from faker.providers import person
 from faker import Faker
 
 from insurance import InsuranceProvider, group, member_id
+from icd import MedicalCondition, MedicalConditionCategory
 
 fake = Faker()
 Faker.seed(0)
@@ -188,6 +189,12 @@ def random_notes(chance=60, sentences=3):
     if fake.boolean(chance_of_getting_true=chance):
         return fake.paragraph(nb_sentences=sentences)
     return None
+
+
+def random_blood_pressure():
+    systolic = fake.random.randint(80, 160)
+    diastolic = fake.random.randint(60, 100)
+    return f"{systolic}/{diastolic}"
 
 
 @dataclass
@@ -377,6 +384,20 @@ def generate_relative(patient: Patient) -> CoveredBy:
 
 
 @dataclass
+class RelativeCondition:
+    relative_id: int
+    icd_code: str
+
+
+def generate_relative_condition(
+    relative: Relative, condition: MedicalCondition
+) -> CoveredBy:
+    return RelativeCondition(
+        relative_id=relative.relative_id, icd_code=condition.icd_code
+    )
+
+
+@dataclass
 class Prescription:
     pharmacy_address: str
     emp_id: int
@@ -400,6 +421,79 @@ def generate_prescription(
     )
 
 
+@dataclass
+class Appointment:
+    patient_id: int
+    app_id: int = field(default_factory=increment_id)
+    room_number: int = field(default_factory=lambda: fake.random.randint(0, 20))
+    blood_pressure: str = field(default_factory=random_blood_pressure)
+    weight: float = field(
+        default_factory=lambda: round(fake.random.uniform(70.0, 400.0), 2)
+    )
+    height: float = field(
+        default_factory=lambda: round(fake.random.uniform(50.0, 80.0), 2)
+    )
+    temperature: float = field(
+        default_factory=lambda: round(fake.random.uniform(96.0, 106.0), 2)
+    )
+    notes: str = field(default_factory=lambda: random_notes())
+
+
+def generate_appointment(patient: Patient) -> Appointment:
+    return Appointment(patient_id=patient.patient_id)
+
+
+@dataclass
+class LabReport:
+    icd_code: str
+    file_id: int
+    app_id: int
+    report_id: int = field(default_factory=increment_id)
+    info: str = field(default_factory=lambda: random_notes(80, 2))
+    result_info: str = field(default_factory=lambda: random_notes(80, 3))
+
+
+def generate_lab_report(
+    medical_condition: MedicalCondition, file: ArchivedFile, appointment: Appointment
+) -> LabReport:
+    return LabReport(
+        icd_code=medical_condition.icd_code,
+        file_id=file.file_id,
+        app_id=appointment.app_id,
+    )
+
+
+@dataclass
+class Experiencing:
+    app_id: int
+    icd_code: str
+    comment: str = field(default_factory=lambda: random_notes(40, 2))
+
+
+def generate_experiencing(
+    appointment: Appointment, medical_condition: MedicalCondition
+) -> Experiencing:
+    return Experiencing(app_id=appointment.app_id, icd_code=medical_condition.icd_code)
+
+
+@dataclass
+class MedicalStaff:
+    emp_id: int
+    app_id: int
+
+
+def generate_medical_staff(
+    employee: Employee, appointment: Appointment
+) -> MedicalStaff:
+    return MedicalStaff(emp_id=employee.emp_id, app_id=appointment.app_id)
+
+
 if __name__ == "__main__":
     for _ in range(5):
-        pprint(generate_prescription(Pharmacy(), Employee(), Patient()))
+        pprint(
+            generate_lab_report(
+                MedicalCondition("420", "420xD", "Test"),
+                generate_archived_file(Patient(), Employee()),
+                generate_appointment(Patient()),
+            )
+        )
