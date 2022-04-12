@@ -651,13 +651,14 @@ class MockGenerator:
     referrable_doctors: List[ReferrableDoctor] = field(init=False)
 
     # all schema below are dependent schema
+    appointments: List[Appointment] = field(init=False, default_factory=list)
     covered_bys: List[CoveredBy] = field(init=False, default_factory=list)
     relatives: List[Relative] = field(init=False, default_factory=list)
+    # CURRENT PROGRESS
     prescriptions: List[Prescription] = field(init=False, default_factory=list)
     immunization_bys: List[ImmunizedBy] = field(init=False, default_factory=list)
     emp_immunizations: List[EmpImmunization] = field(init=False, default_factory=list)
     referrals: List[Referral] = field(init=False, default_factory=list)
-    appointments: List[Appointment] = field(init=False, default_factory=list)
     conducted_bys: List[ConductedBy] = field(init=False, default_factory=list)
     covid_exams: List[CovidExam] = field(init=False, default_factory=list)
     blood_exams: List[BloodExam] = field(init=False, default_factory=list)
@@ -681,6 +682,9 @@ class MockGenerator:
 
     def __post_init__(self):
         self.generate_independent_schema()
+        self.generate_appointments(self.config.appointment_count)
+        self.generate_covered_bys()
+        self.generate_relatives()
 
     def generate_independent_schema(self):
         self.patients = [Patient() for _ in range(self.config.patient_count)]
@@ -700,8 +704,33 @@ class MockGenerator:
             ReferrableDoctor() for _ in range(self.config.referrable_doctor_count)
         ]
 
+    def generate_appointments(self, count: int):
+        random_patients = fake.random_choices(elements=self.patients, length=count)
+        self.appointments.extend(
+            generate_appointment(patient) for patient in random_patients
+        )
+
+    def generate_covered_bys(self):
+        # TODO: Ensure there are no duplicates in this table, can possibly make covered by frozen, and use set
+        quantity = self.config.covered_by_count
+        random_providers = fake.random_choices(elements=self.insurance_providers, length=quantity)
+        random_patients = fake.random_choices(elements=self.patients, length=quantity)
+        self.covered_bys = [
+            generate_covered_by(patient, provider) for patient, provider in zip(random_patients, random_providers)
+        ]
+
+    def generate_relatives(self):
+        random_patients = fake.random_choices(elements=self.patients, length=self.config.relative_count)
+        self.relatives = [
+            generate_relative(patient) for patient in random_patients
+        ]
+
 
 if __name__ == "__main__":
     config = MockGeneratorConfig()
     mock = MockGenerator([], config)
-    pprint(mock)
+    pprint(mock.patients)
+    # pprint(mock)
+    # choices = [Patient() for _ in range(3)]
+    # for patient in fake.random_choices(elements=choices, length=4):
+    #     pprint(patient)
