@@ -12,8 +12,8 @@ source .venv/bin/activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Run API server
-python3 app.py
+# Run a python file
+python3 main.py
 
 # to leave virtual environment
 deactivate

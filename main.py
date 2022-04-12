@@ -15,7 +15,7 @@ def insert_into(table_name: str, column_names: Iterable[str], values: Iterable) 
 if __name__ == '__main__':
     examples = [mock.address, mock.email, mock.name, mock.phone, mock.ssn, 
                 mock.dea_number, mock.date_between, mock.file, 
-                mock.physician, mock.physician_assistant, mock.phone, 
+                mock.physician_license, mock.physician_assistant_license, mock.phone, 
                 insurance.group, insurance.member_id, insurance.name, 
                 insurance.in_network, insurance.policy_number]
     print_quantity = 5

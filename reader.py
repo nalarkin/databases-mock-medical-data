@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 import csv
 from typing import List
-from pprint import pprint
 
 from main import insert_into
 
@@ -39,7 +38,7 @@ def reader() -> List[Code]:
                 )
             except ValueError as error:
                 raise ValueError(
-                    f"processes.csv contains a non-integer value on line: {line_number}.\n"
+                    f"{filename} contains a non-integer value on line: {line_number}.\n"
                     + f"The line's values were '${row}'"
                 ) from error
         return code_list
