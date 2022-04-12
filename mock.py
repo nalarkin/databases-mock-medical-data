@@ -9,6 +9,8 @@ from faker.providers import person
 
 from faker import Faker
 
+from insurance import InsuranceProvider, group, member_id
+
 fake = Faker()
 Faker.seed(0)
 Counter = count()
@@ -130,7 +132,14 @@ def random_specialization() -> str:
     ]
     return fake.random_element(elements=options)
 
+def random_relative_type():
+    options = ['sister', 'brother', 'mother', 'father', 'grandmother', 'grandfather', 'aunt', 'uncle', 'great-grandmother', 'great-grandfather']
+    return fake.random_element(elements=options)
 
+def random_notes(chance=60, sentences=3):
+    if fake.boolean(chance_of_getting_true=chance):
+        return fake.paragraph(nb_sentences=sentences)
+    return None
 
 @dataclass
 class Patient:
@@ -178,15 +187,22 @@ class Employee:
             raise ValueError(f'{self.my_role} does not fit into the possible roles.')
 
 @dataclass
+class ArchivedFile:
+    patient_id: int
+    emp_id: int
+    file_id: int = field(default_factory=increment_id)
+    file_name: str = field(default_factory=file)
+    # TODO: Do we want to use mock blobs?
+    file_blob: str = field(default=None)
+
+def generate_archived_file(patient: Patient, employee: Employee) -> ArchivedFile:
+    return ArchivedFile(patient_id=patient.patient_id, emp_id=employee.emp_id)
+
+@dataclass
 class SpecializedLab:
     lab_id: int = field(default_factory=increment_id) 
     phone_number: str = field(default_factory=phone) 
     my_address: str = field(default_factory=address)
-
-@dataclass
-class Pharmacy:
-    pharmacy_addres: str = field(default_factory=address)
-    pharmacy_name: str = field(default_factory=company)
 
 @dataclass
 class Test:
@@ -194,9 +210,38 @@ class Test:
     test_Name: str = field(default_factory=business_slogan)
 
 @dataclass
+class TestAccepted:
+    test_id: int
+    lab_id: int
+
+def generate_test_accepted(lab: SpecializedLab, test: Test) -> TestAccepted:
+    return TestAccepted(test_id=test.test_id, lab_id=lab.lab_id)
+
+@dataclass
+class Pharmacy:
+    pharmacy_address: str = field(default_factory=address)
+    pharmacy_name: str = field(default_factory=company)
+
+@dataclass
 class Immunization:
     immunization_id: int = field(default_factory=increment_id)
     immunization_type: str = field(default_factory=random_immunization)
+
+@dataclass
+class EmpImmunization:
+    immunization_id: int
+    emp_id: int
+
+def generate_emp_immunization(immunization: Immunization, employee: Employee) -> EmpImmunization:
+    return EmpImmunization(immunization_id=immunization.immunization_id, emp_id=employee.emp_id)
+
+@dataclass 
+class ImmunizedBy:
+    immunization_id: int
+    patient_id: int
+
+def generate_immunized_by(immunization: Immunization, patient: Patient) -> ImmunizedBy:
+    return ImmunizedBy(immunization_id=immunization.immunization_id, patient_id=patient.patient_id)
 
 @dataclass
 class ReferrableDoctor:
@@ -205,6 +250,58 @@ class ReferrableDoctor:
     specialization: str = field(default_factory=random_specialization)
     phone_number: str = field(default_factory=phone)
 
+
+@dataclass
+class Referrel:
+    emp_id: int
+    ref_doctor_id: int
+    patient_id: int
+    ref_id: int = field(default_factory=increment_id)
+
+def generate_referrel(employee: Employee, referrable: ReferrableDoctor, patient: Patient) -> Referrel:
+    return Referrel(emp_id=employee.emp_id, 
+                    ref_doctor_id=referrable.ref_doctor_id, 
+                    patient_id=patient.patient_id)
+
+@dataclass
+class CoveredBy:
+    provider_id: int
+    patient_id: int
+    my_member_id: str = field(default_factory=member_id)
+    group_number: str = field(default_factory=group)
+    policy_holder_name: str = field(default_factory=name) 
+
+def generate_covered_by(patient: Patient, insurance_provider: InsuranceProvider) -> CoveredBy:
+    policy_holder_name = patient.my_name if fake.boolean(chance_of_getting_true=95) else name()
+    return CoveredBy(provider_id=insurance_provider.provider_id, 
+                    patient_id=patient.patient_id, 
+                    policy_holder_name=policy_holder_name)
+@dataclass
+class Relative:
+    patient_id: int
+    relative_id: int = field(default_factory=increment_id)
+    relative_type: str = field(default_factory=random_relative_type)
+    additional_notes: str = field(default_factory=random_notes, repr=False)
+
+def generate_relative(patient: Patient) -> CoveredBy:
+    return Relative(patient_id=patient.patient_id)
+
+@dataclass
+class Prescription:
+    pharmacy_address: str
+    emp_id: int
+    patient_id: int
+    prescription_id: int = field(default_factory=increment_id)
+    # TODO: come up with better drug name generator?
+    drug_name: str = field(default_factory=company)
+    quantity: int = field(default_factory=lambda: fake.random.randint(1, 180))
+    refills: int = field(default_factory=lambda: fake.random.randint(0, 7))
+    instructions: str = field(default_factory=lambda: random_notes(90, 5), repr=False)
+    prescription_date: datetime = field(default_factory=lambda: date_between('-7y'))
+
+def generate_prescription(pharmacy: Pharmacy, employee: Employee, patient: Patient) -> Prescription:
+    return Prescription(pharmacy_address=pharmacy.pharmacy_address,emp_id=employee.emp_id,patient_id=patient.patient_id )
+
 if __name__ == '__main__':
     for _ in range(5):
-        pprint(ReferrableDoctor())
+        pprint(generate_prescription(Pharmacy(), Employee(), Patient()))
