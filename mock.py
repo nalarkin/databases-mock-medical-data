@@ -5,7 +5,7 @@ from datetime import datetime
 from itertools import count
 from pprint import pprint
 from string import ascii_uppercase
-from typing import Optional
+from typing import Optional, List
 from faker.providers import person
 
 from faker import Faker
@@ -595,6 +595,113 @@ def generate_vaccine_administration(exam: Exam) -> VaccineAdministration:
     return VaccineAdministration(exam_id=exam.exam_id)
 
 
+@dataclass
+class MockGeneratorConfig:
+    # independent schema
+    patient_count: int = field(default=5)
+    employee_count: int = field(default=5)
+    insurance_provider_count: int = field(default=5)
+    test_count: int = field(default=5)
+    specialized_lab_count: int = field(default=5)
+    pharmacy_count: int = field(default=5)
+    immunization_count: int = field(default=5)
+    referrable_doctor_count: int = field(default=5)
+
+    # all schema below are dependent schema
+    covered_by_count: int = field(default=5)
+    relative_count: int = field(default=5)
+    prescription_count: int = field(default=5)
+    immunization_by_count: int = field(default=5)
+    emp_immunization_count: int = field(default=5)
+    referral_count: int = field(default=5)
+    appointment_count: int = field(default=5)
+
+    # M-N relationships, partial participation
+    lab_report_count: int = field(default=5)
+    exam_count: int = field(default=5)
+    archived_file_count: int = field(default=5)
+
+    # M-N relationships, total participation
+    medical_staff_count_max: int = field(default=3)
+    test_accepted_count_max: int = field(default=3)
+    diagnosis_count_max: int = field(default=2)
+    experiencing_count_max: int = field(default=2)
+    relative_condition_max: int = field(default=2)
+
+    def __post_init__(self):
+        # generate independent schema
+        pass
+
+    def _generate_independent_schema(self):
+        pass
+
+
+@dataclass
+class MockGenerator:
+    medical_conditions: List[MedicalCondition]
+    config: MockGeneratorConfig = field(repr=False)
+
+    patients: List[Patient] = field(init=False)
+    employees: List[Employee] = field(init=False)
+    insurance_providers: List[InsuranceProvider] = field(init=False)
+    tests: List[Test] = field(init=False)
+    specialized_labs: List[SpecializedLab] = field(init=False)
+    pharmacies: List[Pharmacy] = field(init=False)
+    immunizations: List[Immunization] = field(init=False)
+    referrable_doctors: List[ReferrableDoctor] = field(init=False)
+
+    # all schema below are dependent schema
+    covered_bys: List[CoveredBy] = field(init=False, default_factory=list)
+    relatives: List[Relative] = field(init=False, default_factory=list)
+    prescriptions: List[Prescription] = field(init=False, default_factory=list)
+    immunization_bys: List[ImmunizedBy] = field(init=False, default_factory=list)
+    emp_immunizations: List[EmpImmunization] = field(init=False, default_factory=list)
+    referrals: List[Referral] = field(init=False, default_factory=list)
+    appointments: List[Appointment] = field(init=False, default_factory=list)
+    conducted_bys: List[ConductedBy] = field(init=False, default_factory=list)
+    covid_exams: List[CovidExam] = field(init=False, default_factory=list)
+    blood_exams: List[BloodExam] = field(init=False, default_factory=list)
+    vaccine_administered: List[VaccineAdministration] = field(
+        init=False, default_factory=list
+    )
+
+    # M-N relationships, partial participation
+    lab_reports: List[LabReport] = field(init=False, default_factory=list)
+    exams: List[Exam] = field(init=False, default_factory=list)
+    archived_files: List[ArchivedFile] = field(init=False, default_factory=list)
+
+    # M-N relationships, total participation
+    medical_staff: List[MedicalStaff] = field(init=False, default_factory=list)
+    tests_accepted: List[TestAccepted] = field(init=False, default_factory=list)
+    diagnosis: List[Diagnosis] = field(init=False, default_factory=list)
+    experiencing: List[Experiencing] = field(init=False, default_factory=list)
+    relative_conditions: List[RelativeCondition] = field(
+        init=False, default_factory=list
+    )
+
+    def __post_init__(self):
+        self.generate_independent_schema()
+
+    def generate_independent_schema(self):
+        self.patients = [Patient() for _ in range(self.config.patient_count)]
+        self.employees = [Employee() for _ in range(self.config.employee_count)]
+        self.insurance_providers = [
+            InsuranceProvider() for _ in range(self.config.insurance_provider_count)
+        ]
+        self.tests = [Test() for _ in range(self.config.test_count)]
+        self.specialized_labs = [
+            SpecializedLab() for _ in range(self.config.specialized_lab_count)
+        ]
+        self.pharmacies = [Pharmacy() for _ in range(self.config.pharmacy_count)]
+        self.immunizations = [
+            Immunization() for _ in range(self.config.immunization_count)
+        ]
+        self.referrable_doctors = [
+            ReferrableDoctor() for _ in range(self.config.referrable_doctor_count)
+        ]
+
+
 if __name__ == "__main__":
-    for _ in range(5):
-        pprint(generate_emp_immunization(Immunization(), Employee()))
+    config = MockGeneratorConfig()
+    mock = MockGenerator([], config)
+    pprint(mock)
