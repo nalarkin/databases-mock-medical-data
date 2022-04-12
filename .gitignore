@@ -1,0 +1,7 @@
+.venv
+__pycache__
+.vscode
+*.csv
+*.sql
+!icd_categories.csv
+!icd_codes.csv
