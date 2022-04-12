@@ -3,6 +3,9 @@ from typing import Iterable
 import mock
 import insurance
 from pprint import pprint
+from auto_increment import AutoIncrement
+
+auto_inc = AutoIncrement()
 
 
 def insert_into(table_name: str, column_names: Iterable[str], values: Iterable) -> str:

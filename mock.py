@@ -12,10 +12,13 @@ from faker import Faker
 
 from insurance import InsuranceProvider, group, member_id
 from icd import MedicalCondition, MedicalConditionCategory
+from auto_increment import AutoIncrement
 
 fake = Faker()
 Faker.seed(0)
 Counter = count()
+
+auto_id = AutoIncrement()
 
 
 def name() -> str:
@@ -95,10 +98,6 @@ def role() -> str:
         "Physician Assistant",
     ]
     return fake.random_element(elements=options)
-
-
-def increment_id() -> int:
-    return next(Counter)
 
 
 def business_slogan() -> str:
@@ -216,7 +215,7 @@ def random_blood_sugar():
 
 @dataclass
 class Patient:
-    patient_id: int = field(default_factory=increment_id)
+    patient_id: int = field(default_factory=lambda: auto_id.next_id("Patient"))
     phone_number: str = field(default_factory=phone)
     birthday: datetime = field(
         default_factory=lambda: date_between(start_date="-60y", end_date="-1y")
@@ -230,7 +229,7 @@ class Patient:
 
 @dataclass
 class Employee:
-    emp_id: int = field(default_factory=increment_id)
+    emp_id: int = field(default_factory=lambda: auto_id.next_id("Employee"))
     phone_number: str = field(default_factory=phone)
     birthday: datetime = field(
         default_factory=lambda: date_between(start_date="-60y", end_date="-20y")
@@ -269,7 +268,7 @@ class Employee:
 class ArchivedFile:
     patient_id: int
     emp_id: int
-    file_id: int = field(default_factory=increment_id)
+    file_id: int = field(default_factory=lambda: auto_id.next_id("ArchivedFile"))
     file_name: str = field(default_factory=file)
     # TODO: Do we want to use mock blobs?
     file_blob: str = field(default=None)
@@ -281,14 +280,14 @@ def generate_archived_file(patient: Patient, employee: Employee) -> ArchivedFile
 
 @dataclass
 class SpecializedLab:
-    lab_id: int = field(default_factory=increment_id)
+    lab_id: int = field(default_factory=lambda: auto_id.next_id("SpecializedLab"))
     phone_number: str = field(default_factory=phone)
     my_address: str = field(default_factory=address)
 
 
 @dataclass
 class Test:
-    test_id: int = field(default_factory=increment_id)
+    test_id: int = field(default_factory=lambda: auto_id.next_id("Test"))
     test_Name: str = field(default_factory=business_slogan)
 
 
@@ -310,7 +309,9 @@ class Pharmacy:
 
 @dataclass
 class Immunization:
-    immunization_id: int = field(default_factory=increment_id)
+    immunization_id: int = field(
+        default_factory=lambda: auto_id.next_id("Immunization")
+    )
     immunization_type: str = field(default_factory=random_immunization)
 
 
@@ -342,7 +343,9 @@ def generate_immunized_by(immunization: Immunization, patient: Patient) -> Immun
 
 @dataclass
 class ReferrableDoctor:
-    ref_doctor_id: int = field(default_factory=increment_id)
+    ref_doctor_id: int = field(
+        default_factory=lambda: auto_id.next_id("ReferrableDoctor")
+    )
     my_name: str = field(default_factory=name)
     specialization: str = field(default_factory=random_specialization)
     phone_number: str = field(default_factory=phone)
@@ -353,7 +356,7 @@ class Referral:
     emp_id: int
     ref_doctor_id: int
     patient_id: int
-    ref_id: int = field(default_factory=increment_id)
+    ref_id: int = field(default_factory=lambda: auto_id.next_id("Referral"))
 
 
 def generate_referrel(
@@ -391,7 +394,7 @@ def generate_covered_by(
 @dataclass
 class Relative:
     patient_id: int
-    relative_id: int = field(default_factory=increment_id)
+    relative_id: int = field(default_factory=lambda: auto_id.next_id("Relative"))
     relative_type: str = field(default_factory=random_relative_type)
     additional_notes: Optional[str] = field(default_factory=random_notes, repr=False)
 
@@ -419,7 +422,9 @@ class Prescription:
     pharmacy_address: str
     emp_id: int
     patient_id: int
-    prescription_id: int = field(default_factory=increment_id)
+    prescription_id: int = field(
+        default_factory=lambda: auto_id.next_id("Prescription")
+    )
     # TODO: come up with better drug name generator?
     drug_name: str = field(default_factory=company)
     quantity: int = field(default_factory=lambda: fake.random.randint(1, 180))
@@ -443,7 +448,7 @@ def generate_prescription(
 @dataclass
 class Appointment:
     patient_id: int
-    app_id: int = field(default_factory=increment_id)
+    app_id: int = field(default_factory=lambda: auto_id.next_id("Appointment"))
     room_number: int = field(default_factory=lambda: fake.random.randint(0, 20))
     blood_pressure: str = field(default_factory=random_blood_pressure)
     weight: float = field(
@@ -467,7 +472,7 @@ class LabReport:
     icd_code: str
     file_id: int
     app_id: int
-    report_id: int = field(default_factory=increment_id)
+    report_id: int = field(default_factory=lambda: auto_id.next_id("LabReport"))
     info: Optional[str] = field(default_factory=lambda: random_notes(80, 2))
     result_info: Optional[str] = field(default_factory=lambda: random_notes(80, 3))
 
@@ -548,7 +553,7 @@ def generate_conducted_by(
 class Exam:
     report_id: int
     app_id: int
-    exam_id: int = field(default_factory=increment_id)
+    exam_id: int = field(default_factory=lambda: auto_id.next_id("Exam"))
     comment: Optional[str] = field(default_factory=lambda: random_notes(60, 2))
 
 
@@ -592,4 +597,4 @@ def generate_vaccine_administration(exam: Exam) -> VaccineAdministration:
 
 if __name__ == "__main__":
     for _ in range(5):
-        pass
+        pprint(generate_emp_immunization(Immunization(), Employee()))
