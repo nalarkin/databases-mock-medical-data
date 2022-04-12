@@ -5,6 +5,7 @@ from datetime import datetime
 from itertools import count
 from pprint import pprint
 from string import ascii_uppercase
+from typing import Optional
 from faker.providers import person
 
 from faker import Faker
@@ -104,23 +105,25 @@ def business_slogan() -> str:
     return fake.bs()
 
 
+IMMUNIZATION_TYPES = [
+    "Tuberculosis",
+    "Hepatitis B",
+    "Poliovirus",
+    "Diphtheria",
+    "Tetanus",
+    "Pertussis",
+    "Haemophilus Influenza Type B",
+    "Pneumococcal diseases",
+    "Rotavirus",
+    "Measles",
+    "Mumps",
+    "Rubella",
+    "Human papillomavirus",
+]
+
+
 def random_immunization() -> str:
-    options = [
-        "Tuberculosis",
-        "Hepatitis B",
-        "Poliovirus",
-        "Diphtheria",
-        "Tetanus",
-        "Pertussis",
-        "Haemophilus Influenza Type B",
-        "Pneumococcal diseases",
-        "Rotavirus",
-        "Measles",
-        "Mumps",
-        "Rubella",
-        "Human papillomavirus",
-    ]
-    return fake.random_element(elements=options)
+    return fake.random_element(elements=IMMUNIZATION_TYPES)
 
 
 def random_specialization() -> str:
@@ -185,7 +188,7 @@ def random_relative_type():
     return fake.random_element(elements=options)
 
 
-def random_notes(chance=60, sentences=3):
+def random_notes(chance=60, sentences=3) -> Optional[str]:
     if fake.boolean(chance_of_getting_true=chance):
         return fake.paragraph(nb_sentences=sentences)
     return None
@@ -195,6 +198,20 @@ def random_blood_pressure():
     systolic = fake.random.randint(80, 160)
     diastolic = fake.random.randint(60, 100)
     return f"{systolic}/{diastolic}"
+
+
+def random_covid_exam():
+    options = ["PCR", "Antigen"]
+    return fake.random_element(elements=options)
+
+
+def random_blood_type():
+    blood_types = ["A+", "B+", "AB+", "O+", "A-", "B-", "AB-", "O-"]
+    return fake.random_element(elements=blood_types)
+
+
+def random_blood_sugar():
+    return fake.random.randint(70, 120)
 
 
 @dataclass
@@ -376,7 +393,7 @@ class Relative:
     patient_id: int
     relative_id: int = field(default_factory=increment_id)
     relative_type: str = field(default_factory=random_relative_type)
-    additional_notes: str = field(default_factory=random_notes, repr=False)
+    additional_notes: Optional[str] = field(default_factory=random_notes, repr=False)
 
 
 def generate_relative(patient: Patient) -> CoveredBy:
@@ -407,7 +424,9 @@ class Prescription:
     drug_name: str = field(default_factory=company)
     quantity: int = field(default_factory=lambda: fake.random.randint(1, 180))
     refills: int = field(default_factory=lambda: fake.random.randint(0, 7))
-    instructions: str = field(default_factory=lambda: random_notes(90, 5), repr=False)
+    instructions: Optional[str] = field(
+        default_factory=lambda: random_notes(90, 5), repr=False
+    )
     prescription_date: datetime = field(default_factory=lambda: date_between("-7y"))
 
 
@@ -436,7 +455,7 @@ class Appointment:
     temperature: float = field(
         default_factory=lambda: round(fake.random.uniform(96.0, 106.0), 2)
     )
-    notes: str = field(default_factory=lambda: random_notes())
+    notes: Optional[str] = field(default_factory=lambda: random_notes())
 
 
 def generate_appointment(patient: Patient) -> Appointment:
@@ -449,16 +468,18 @@ class LabReport:
     file_id: int
     app_id: int
     report_id: int = field(default_factory=increment_id)
-    info: str = field(default_factory=lambda: random_notes(80, 2))
-    result_info: str = field(default_factory=lambda: random_notes(80, 3))
+    info: Optional[str] = field(default_factory=lambda: random_notes(80, 2))
+    result_info: Optional[str] = field(default_factory=lambda: random_notes(80, 3))
 
 
 def generate_lab_report(
-    medical_condition: MedicalCondition, file: ArchivedFile, appointment: Appointment
+    medical_condition: MedicalCondition,
+    appointment: Appointment,
+    file: ArchivedFile = None,
 ) -> LabReport:
     return LabReport(
         icd_code=medical_condition.icd_code,
-        file_id=file.file_id,
+        file_id=file.file_id if file else None,
         app_id=appointment.app_id,
     )
 
@@ -467,7 +488,7 @@ def generate_lab_report(
 class Experiencing:
     app_id: int
     icd_code: str
-    comment: str = field(default_factory=lambda: random_notes(40, 2))
+    comment: Optional[str] = field(default_factory=lambda: random_notes(40, 2))
 
 
 def generate_experiencing(
@@ -488,12 +509,87 @@ def generate_medical_staff(
     return MedicalStaff(emp_id=employee.emp_id, app_id=appointment.app_id)
 
 
+@dataclass
+class Diagnosis:
+    emp_id: int
+    patient_id: int
+    app_id: int
+    icd_code: str
+    comment: Optional[str] = field(default_factory=lambda: random_notes(90, 3))
+
+
+def generate_diagnosis(
+    employee: Employee,
+    appointment: Appointment,
+    patient: Patient,
+    medical_condition: MedicalCondition,
+) -> Diagnosis:
+    return Diagnosis(
+        emp_id=employee.emp_id,
+        patient_id=patient.patient_id,
+        app_id=appointment.app_id,
+        icd_code=medical_condition.icd_code,
+    )
+
+
+@dataclass
+class ConductedBy:
+    report_id: int
+    lab_id: int
+
+
+def generate_conducted_by(
+    report: LabReport, specialized_lab: SpecializedLab
+) -> ConductedBy:
+    return ConductedBy(report_id=report.report_id, lab_id=specialized_lab.lab_id)
+
+
+@dataclass
+class Exam:
+    report_id: int
+    app_id: int
+    exam_id: int = field(default_factory=increment_id)
+    comment: Optional[str] = field(default_factory=lambda: random_notes(60, 2))
+
+
+def generate_exam(report: LabReport, appointment: Appointment) -> Exam:
+    return Exam(report_id=report.report_id, app_id=appointment.app_id)
+
+
+@dataclass
+class CovidExam:
+    exam_id: int
+    test_type: str = field(default_factory=random_covid_exam)
+    is_positive: bool = field(
+        default_factory=lambda: fake.boolean(chance_of_getting_true=10)
+    )
+
+
+def generate_covid_exam(exam: Exam) -> CovidExam:
+    return CovidExam(exam_id=exam.exam_id)
+
+
+@dataclass
+class BloodExam:
+    exam_id: int
+    blood_type: str = field(default_factory=random_blood_type)
+    blood_sugar: int = field(default_factory=random_blood_sugar)
+
+
+def generate_blood_exam(exam: Exam) -> BloodExam:
+    return BloodExam(exam_id=exam.exam_id)
+
+
+@dataclass
+class VaccineAdministration:
+    exam_id: int
+    vaccine_type: str = field(default_factory=random_immunization)
+
+
+def generate_vaccine_administration(exam: Exam) -> VaccineAdministration:
+    return VaccineAdministration(exam_id=exam.exam_id)
+
+
 if __name__ == "__main__":
     for _ in range(5):
-        pprint(
-            generate_lab_report(
-                MedicalCondition("420", "420xD", "Test"),
-                generate_archived_file(Patient(), Employee()),
-                generate_appointment(Patient()),
-            )
-        )
+        pass
