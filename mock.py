@@ -5,6 +5,7 @@ from datetime import datetime
 from itertools import count
 from pprint import pprint
 from string import ascii_uppercase
+from faker.providers import person
 
 from faker import Faker
 
@@ -13,6 +14,7 @@ Faker.seed(0)
 Counter = count()
 
 def name() -> str:
+    # TODO: Potentially add custom name building, to prevent prefixes and suffixes from happening,
     return fake.name()
 
 def ssn() -> str:
@@ -63,16 +65,76 @@ def company():
 gender_options = OrderedDict(build_gender_dict())
 
 def gender() -> str:
-    return fake.random_elements(elements=gender_options, unique=False, length=1)[0]
+    return fake.random_element(elements=gender_options)
 
 
 def role() -> str:
     options = ['Physician General Practitioner', 'Nurse', 'Orderly', 'Receptionist', 'Physician Assistant']
-    return fake.random_elements(elements=options, length=1)[0]
+    return fake.random_element(elements=options)
+
+def increment_id() -> int:
+    return next(Counter)
+
+def business_slogan() -> str:
+    return fake.bs()
+
+def random_immunization() -> str:
+    options = ['Tuberculosis', 'Hepatitis B', 'Poliovirus', 'Diphtheria', 'Tetanus', 'Pertussis', 
+                'Haemophilus Influenza Type B', 'Pneumococcal diseases', 'Rotavirus', 'Measles', 
+                'Mumps', 'Rubella', 'Human papillomavirus']
+    return fake.random_element(elements=options)
+
+    
+def random_specialization() -> str:
+    options = [
+        'Allergy',
+        'Anesthesia',
+        'Bariatric Medicine/Surgery',
+        'Burn/Trauma',
+        'Cardiac Catheterization',
+        'Cardiology',
+        'Cardiovascular Surgery',
+        'Colorectal Surgery',
+        'Dermatology',
+        'Electrophysiology',
+        'Emergency Medicine',
+        'Endocrinology',
+        'Family Practice',
+        'Gastroenterology',
+        'General Surgery',
+        'Geriatrics',
+        'Gynecologic Oncology',
+        'Hematology/Oncology',
+        'Hepatobiliary',
+        'Infectious Disease',
+        'Internal Medicine',
+        'Neonatology',
+        'Nephrology',
+        'Neurology',
+        'Neurosurgery',
+        'Nuclear Medicine',
+        'Obstetrics & Gynecology',
+        'Occupational Medicine',
+        'Ophthalmology',
+        'Oral Surgery',
+        'Orthopedics',
+        'Otolaryngology / Head & Neck Surgery',
+        'Pain Management',
+        'Palliative Care',
+        'Pain Management',
+        'Palliative Care',
+        'Pathology: Surgical & Anatomic',
+        'Pediatrics',
+        'Pediatric Surgery',
+        'Psychiatry',
+    ]
+    return fake.random_element(elements=options)
+
+
 
 @dataclass
 class Patient:
-    patient_id: int = field(default_factory=lambda: next(Counter)) 
+    patient_id: int = field(default_factory=increment_id) 
     phone_number: str = field(default_factory=phone)
     birthday: datetime = field(default_factory=lambda: date_between(start_date='-60y', end_date='-1y'))
     my_email: str = field(default_factory=email)
@@ -83,7 +145,7 @@ class Patient:
 
 @dataclass
 class Employee:
-    emp_id: int = field(default_factory=lambda: next(Counter)) 
+    emp_id: int = field(default_factory=increment_id) 
     phone_number: str = field(default_factory=phone)
     birthday: datetime = field(default_factory=lambda: date_between(start_date='-60y', end_date='-20y'))
     my_email: str = field(default_factory=email)
@@ -117,7 +179,7 @@ class Employee:
 
 @dataclass
 class SpecializedLab:
-    lab_id: int = field(default_factory=lambda: next(Counter)) 
+    lab_id: int = field(default_factory=increment_id) 
     phone_number: str = field(default_factory=phone) 
     my_address: str = field(default_factory=address)
 
@@ -126,7 +188,23 @@ class Pharmacy:
     pharmacy_addres: str = field(default_factory=address)
     pharmacy_name: str = field(default_factory=company)
 
+@dataclass
+class Test:
+    test_id: int = field(default_factory=increment_id)
+    test_Name: str = field(default_factory=business_slogan)
+
+@dataclass
+class Immunization:
+    immunization_id: int = field(default_factory=increment_id)
+    immunization_type: str = field(default_factory=random_immunization)
+
+@dataclass
+class ReferrableDoctor:
+    ref_doctor_id: int = field(default_factory=increment_id)
+    my_name: str = field(default_factory=name)
+    specialization: str = field(default_factory=random_specialization)
+    phone_number: str = field(default_factory=phone)
+
 if __name__ == '__main__':
-    patients = [Pharmacy() for _ in range(10)] 
-    for patient in patients:
-        pprint(patient)
+    for _ in range(5):
+        pprint(ReferrableDoctor())
