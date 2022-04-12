@@ -1,11 +1,12 @@
 # pylint: skip-file
-from faker import Faker
-from pprint import pprint
-from string import ascii_uppercase
+from collections import OrderedDict
 from dataclasses import dataclass, field
 from datetime import datetime
-from collections import OrderedDict
 from itertools import count
+from pprint import pprint
+from string import ascii_uppercase
+
+from faker import Faker
 
 fake = Faker()
 Faker.seed(0)
@@ -54,6 +55,9 @@ def build_gender_dict():
     for option in other_genders:
         options.append((option, 0.2 / len(other_genders)))
     return options
+
+def company():
+    return fake.company()
 
 
 gender_options = OrderedDict(build_gender_dict())
@@ -110,8 +114,19 @@ class Employee:
             self.my_dea_number = dea_number()
         else:
             raise ValueError(f'{self.my_role} does not fit into the possible roles.')
-            
+
+@dataclass
+class SpecializedLab:
+    lab_id: int = field(default_factory=lambda: next(Counter)) 
+    phone_number: str = field(default_factory=phone) 
+    my_address: str = field(default_factory=address)
+
+@dataclass
+class Pharmacy:
+    pharmacy_addres: str = field(default_factory=address)
+    pharmacy_name: str = field(default_factory=company)
+
 if __name__ == '__main__':
-    patients = [Employee() for _ in range(10)] 
+    patients = [Pharmacy() for _ in range(10)] 
     for patient in patients:
         pprint(patient)
