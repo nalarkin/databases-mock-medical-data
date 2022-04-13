@@ -10,7 +10,10 @@ def insert_into(table_name: str, column_names: Iterable[str], values: Iterable) 
     combined = ",\n\n".join(values)
     columns = (f"`{column}`" for column in column_names)
     header = f"/* INSERT DATA INTO `{table_name}` TABLE */\n\n"
-    return header + f"INSERT INTO `{table_name}` ({', '.join(columns)}) VALUES\n\n{combined};"
+    return (
+        header
+        + f"INSERT INTO `{table_name}` ({', '.join(columns)}) VALUES\n\n{combined};"
+    )
 
 
 if __name__ == "__main__":

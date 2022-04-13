@@ -216,10 +216,14 @@ def random_blood_type():
 def random_blood_sugar():
     return fake.random.randint(70, 120)
 
+
 def get_attributes(cls, excluded=None):
     if excluded is None:
         excluded = []
-    return [attr for attr in dir(cls) if not attr.startswith('_') and attr not in excluded]
+    return [
+        attr for attr in dir(cls) if not attr.startswith("_") and attr not in excluded
+    ]
+
 
 def get_attribute_values(cls, attributes):
     return tuple(getattr(cls, attr) for attr in attributes)
@@ -248,7 +252,7 @@ class Patient:
         return ""
 
     def example_function(self):
-        return ''
+        return ""
 
 
 @dataclass
@@ -898,12 +902,16 @@ class MockGenerator:
                 exam_types[random_selection_idx](exam.exam_id)
             )
 
+
 def build_insert_statement(cls_array):
     first = cls_array[0]
-    attrs = get_attributes(first, ['example_function', 'columns', 'row_values'])
+    attrs = get_attributes(first, ["example_function", "columns", "row_values"])
     table_name = type(first).__name__
     values = (get_attribute_values(cls, attrs) for cls in cls_array)
-    return insert_into(column_names=attrs, table_name=table_name, values=map(str,values))
+    return insert_into(
+        column_names=attrs, table_name=table_name, values=map(str, values)
+    )
+
 
 def build_all_insert_statements(cls_arrays):
     insert_statements = []
@@ -913,13 +921,12 @@ def build_all_insert_statements(cls_arrays):
             continue
         insert_statements.append(build_insert_statement(cls_array))
     return insert_statements
-    
+
 
 def write_insert_statement(statements: List[str]):
     with open("example.sql", "wt", encoding="utf-8") as f:
         for statement in statements:
-            print(statement, file=f, end='\n\n')
-
+            print(statement, file=f, end="\n\n")
 
 
 if __name__ == "__main__":
@@ -935,7 +942,7 @@ if __name__ == "__main__":
     pprint(patient_1)
     pprint(patient_1.columns)
     # attrs = get_attributes(patient_1, ['example_function', 'columns', 'row_values'])
-    tables_to_insert = get_attributes(mock, ['medical_conditions', 'config'])
+    tables_to_insert = get_attributes(mock, ["medical_conditions", "config"])
     pprint(tables_to_insert)
     table_values_to_insert = get_attribute_values(mock, tables_to_insert)
     pprint(table_values_to_insert)
