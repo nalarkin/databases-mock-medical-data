@@ -707,6 +707,11 @@ class MockGenerator:
         self.generate_archived_files()
         self.generate_medical_staff()
         self.generate_tests_accepted()
+        self.generate_experiencing()
+        self.generate_relative_conditions()
+        self.generate_diagnosis()
+        self.generate_lab_reports()
+        self.generate_conducted_bys()
 
     def generate_independent_schema(self):
         self.patients = [Patient() for _ in range(self.config.patient_count)]
@@ -804,7 +809,6 @@ class MockGenerator:
     def generate_medical_staff(self):
         """Every appointment must have at least 1 medical staff"""
         medical_staff = []
-
         for app in self.appointments:
             random_length = fake.random.randint(1, self.config.medical_staff_count_max)
             for employee in fake.random_elements(
@@ -816,7 +820,6 @@ class MockGenerator:
     def generate_tests_accepted(self):
         """Every appointment must have at least 1 medical staff"""
         tests_accepted = []
-
         for lab in self.specialized_labs:
             random_length = fake.random.randint(1, self.config.test_accepted_count_max)
             for test in fake.random_elements(
@@ -825,13 +828,74 @@ class MockGenerator:
                 tests_accepted.append(generate_test_accepted(lab, test))
         self.tests_accepted = tests_accepted
 
+    def generate_experiencing(self):
+        experiencing = []
+        for app in self.appointments:
+            random_length = fake.random.randint(1, self.config.experiencing_count_max)
+            for condition in fake.random_elements(
+                elements=self.medical_conditions, unique=True, length=random_length
+            ):
+                experiencing.append(generate_experiencing(app, condition))
+        self.experiencing = experiencing
+
+    def generate_relative_conditions(self):
+        relative_conditions = []
+        for relative in self.relatives:
+            random_length = fake.random.randint(1, self.config.relative_condition_max)
+            for condition in fake.random_elements(
+                elements=self.medical_conditions, unique=True, length=random_length
+            ):
+                relative_conditions.append(
+                    generate_relative_condition(relative, condition)
+                )
+        self.relative_conditions = relative_conditions
+
+    def generate_diagnosis(self):
+        diagnosis = []
+        for app in self.appointments:
+            random_length = fake.random.randint(0, self.config.diagnosis_count_max)
+            random_employee = fake.random_element(elements=self.employees)
+            for condition in fake.random_elements(
+                elements=self.medical_conditions, unique=True, length=random_length
+            ):
+                diagnosis.append(
+                    generate_diagnosis(
+                        random_employee, app, Patient(app.patient_id), condition
+                    )
+                )
+        self.diagnosis = diagnosis
+
+    def generate_lab_reports(self):
+        self.lab_reports = [
+            generate_lab_report(con, app, f)
+            for con, app, f in self.random_selector(
+                self.medical_conditions,
+                self.appointments,
+                self.archived_files,
+                quantity=self.config.lab_report_count,
+            )
+        ]
+
+    def generate_conducted_bys(self):
+        self.conducted_bys = [
+            generate_conducted_by(report, lab)
+            for report, lab in zip(
+                self.lab_reports,
+                fake.random_elements(
+                    elements=self.specialized_labs, length=len(self.lab_reports)
+                ),
+            )
+        ]
+
 
 if __name__ == "__main__":
     config = MockGeneratorConfig(prescription_count=3)
     conditions = read_conditions_from_file()
     # categories = read_categories_from_file()
-    mock = MockGenerator([conditions], config)
-    pprint(mock.tests_accepted)
+    # pprint(conditions)
+    mock = MockGenerator(conditions, config)
+    pprint(mock.conducted_bys)
+    # pprint(mock.relatives)
 
     # pprint(mock)
     # choices = [Patient() for _ in range(3)]
