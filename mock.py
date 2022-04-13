@@ -2,23 +2,17 @@
 from collections import OrderedDict
 from dataclasses import dataclass, field
 from datetime import datetime
-from email.generator import Generator
 from itertools import count
 from pprint import pprint
 from string import ascii_uppercase
-from typing import Optional, List
-from faker.providers import person
+from typing import List, Optional
 
 from faker import Faker
+from faker.providers import person
 
-from insurance import InsuranceProvider, group, member_id
-from icd import (
-    MedicalCondition,
-    MedicalConditionCategory,
-    read_categories_from_file,
-    read_conditions_from_file,
-)
 from auto_increment import AutoIncrement
+from icd import MedicalCondition, read_conditions_from_file
+from insurance import InsuranceProvider, group, member_id
 
 fake = Faker()
 Faker.seed(0)
@@ -583,27 +577,15 @@ class CovidExam(ExamInterface):
     )
 
 
-def generate_covid_exam(exam: Exam) -> CovidExam:
-    return CovidExam(exam_id=exam.exam_id)
-
-
 @dataclass
 class BloodExam(ExamInterface):
     blood_type: str = field(default_factory=random_blood_type)
     blood_sugar: int = field(default_factory=random_blood_sugar)
 
 
-def generate_blood_exam(exam: Exam) -> BloodExam:
-    return BloodExam(exam_id=exam.exam_id)
-
-
 @dataclass
 class VaccineAdministration(ExamInterface):
     vaccine_type: str = field(default_factory=random_immunization)
-
-
-def generate_vaccine_administration(exam: Exam) -> VaccineAdministration:
-    return VaccineAdministration(exam_id=exam.exam_id)
 
 
 @dataclass
@@ -639,14 +621,6 @@ class MockGeneratorConfig:
     experiencing_count_max: int = field(default=2)
     relative_condition_max: int = field(default=2)
 
-    def __post_init__(self):
-        # generate independent schema
-        pass
-
-    def _generate_independent_schema(self):
-        pass
-
-
 @dataclass
 class MockGenerator:
     medical_conditions: List[MedicalCondition]
@@ -661,11 +635,6 @@ class MockGenerator:
     immunizations: List[Immunization] = field(init=False)
     referrable_doctors: List[ReferrableDoctor] = field(init=False)
 
-    # exam subclasses go here
-    exam_types: List[ExamInterface] = field(
-        default_factory=lambda: [BloodExam, CovidExam, VaccineAdministration]
-    )
-
     # all schema below are dependent schema
     appointments: List[Appointment] = field(init=False, default_factory=list)
     covered_bys: List[CoveredBy] = field(init=False, default_factory=list)
@@ -675,7 +644,6 @@ class MockGenerator:
     emp_immunizations: List[EmpImmunization] = field(init=False, default_factory=list)
     referrals: List[Referral] = field(init=False, default_factory=list)
     conducted_bys: List[ConductedBy] = field(init=False, default_factory=list)
-    # CURRENT PROGRESS
     blood_exams: List[BloodExam] = field(init=False, default_factory=list)
     covid_exams: List[CovidExam] = field(init=False, default_factory=list)
     vaccine_administered: List[VaccineAdministration] = field(
