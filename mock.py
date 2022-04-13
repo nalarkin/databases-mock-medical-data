@@ -676,8 +676,8 @@ class MockGenerator:
     referrals: List[Referral] = field(init=False, default_factory=list)
     conducted_bys: List[ConductedBy] = field(init=False, default_factory=list)
     # CURRENT PROGRESS
-    covid_exams: List[CovidExam] = field(init=False, default_factory=list)
     blood_exams: List[BloodExam] = field(init=False, default_factory=list)
+    covid_exams: List[CovidExam] = field(init=False, default_factory=list)
     vaccine_administered: List[VaccineAdministration] = field(
         init=False, default_factory=list
     )
@@ -712,6 +712,8 @@ class MockGenerator:
         self.generate_diagnosis()
         self.generate_lab_reports()
         self.generate_conducted_bys()
+        self.generate_exams()
+        self.generate_exam_subclasses()
 
     def generate_independent_schema(self):
         self.patients = [Patient() for _ in range(self.config.patient_count)]
@@ -887,17 +889,29 @@ class MockGenerator:
             )
         ]
 
+    def generate_exams(self):
+        self.exams = [
+            generate_exam(report, app)
+            for report, app in self.random_selector(
+                self.lab_reports, self.appointments, quantity=self.config.exam_count
+            )
+        ]
+
+    def generate_exam_subclasses(self):
+        arrays = [self.blood_exams, self.covid_exams, self.vaccine_administered]
+        exam_types: List[ExamInterface] = [BloodExam, CovidExam, VaccineAdministration]
+        for exam in self.exams:
+            random_selection_idx = fake.random.randint(0, len(exam_types) - 1)
+            arrays[random_selection_idx].append(
+                exam_types[random_selection_idx](exam.exam_id)
+            )
+
 
 if __name__ == "__main__":
     config = MockGeneratorConfig(prescription_count=3)
     conditions = read_conditions_from_file()
-    # categories = read_categories_from_file()
-    # pprint(conditions)
     mock = MockGenerator(conditions, config)
-    pprint(mock.conducted_bys)
-    # pprint(mock.relatives)
-
-    # pprint(mock)
-    # choices = [Patient() for _ in range(3)]
-    # for patient in fake.random_choices(elements=choices, length=4):
-    #     pprint(patient)
+    pprint(mock.exams)
+    pprint(mock.blood_exams)
+    pprint(mock.covid_exams)
+    pprint(mock.vaccine_administered)
