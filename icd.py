@@ -1,4 +1,7 @@
+import csv
 from dataclasses import dataclass
+from pprint import pprint
+from typing import List
 
 
 @dataclass
@@ -12,3 +15,90 @@ class MedicalCondition:
 class MedicalConditionCategory:
     category_code: str
     category_name: str
+
+
+@dataclass
+class Code:
+    category_code: str
+    variant: int
+    complete_code: str
+    name: str
+    name_duplicate: str
+    category: str
+
+    @property
+    def insert(self):
+        attributes = (self.complete_code, self.category_code, self.name)
+        # return f"({', '.join(attributes)})"
+        return attributes
+
+
+CATEGORY_CODE, VARIANT, COMPLETE_CODE, NAME, *_ = 0, 1, 2, 3, 4, 5
+
+
+def read_conditions_from_file() -> List[MedicalCondition]:
+    filename = "icd_codes.csv"
+    with open(filename, mode="rt", encoding="utf-8", newline="\n") as csv_file:
+        code_reader = csv.reader(
+            csv_file,
+        )
+        code_list = []
+        for line_number, row in enumerate(code_reader, 1):
+            if line_number > 3:
+                break
+            try:
+                code_list.append(
+                    MedicalCondition(row[CATEGORY_CODE], row[COMPLETE_CODE], row[NAME])
+                )
+            except ValueError as error:
+                raise ValueError(
+                    f"{filename} contains a non-integer value on line: {line_number}.\n"
+                    + f"The line's values were '${row}'"
+                ) from error
+        return code_list
+
+
+def read_categories_from_file() -> List[MedicalConditionCategory]:
+    filename = "icd_categories.csv"
+    with open(filename, mode="rt", encoding="utf-8", newline="\n") as csv_file:
+        code_reader = csv.reader(
+            csv_file,
+        )
+        code_list = []
+        for line_number, row in enumerate(code_reader, 1):
+            if line_number > 3:
+                break
+            try:
+                code_list.append(MedicalConditionCategory(row[0], row[1]))
+            except ValueError as error:
+                raise ValueError(
+                    f"{filename} contains a non-integer value on line: {line_number}.\n"
+                    + f"The line's values were '${row}'"
+                ) from error
+        return code_list
+
+
+# def write_categories_to_file(code_data: List[Code]):
+#     # TODO: Instead of reading categories from icd_code.csv, read it from icd_categories.csv
+#     category_input = set((code.category_code, code.category) for code in code_data)
+#     table_name = "category"
+#     columns = ["category_code", "category_name"]
+#     with open("insert_categories.sql", "wt", encoding="utf-8") as f:
+#         print(insert_into(table_name, columns, map(str, iter(category_input))), file=f)
+
+
+# def write_conditions_to_file(code_data: List[Code]):
+#     columns = ["icd_code", "category_id", "condition_name"]
+#     table_name = "condition"
+#     data = (code.insert for code in code_data)
+#     with open("insert_conditions.sql", "wt", encoding="utf-8") as f:
+#         print(insert_into(table_name, columns, map(str, data)), file=f)
+
+
+if __name__ == "__main__":
+    codes = read_categories_from_file()
+    pprint(codes)
+    # TODO: Instead of reading categories from icd_code.csv, read it from icd_categories.csv
+
+    # write_categories_to_file(codes)
+    # write_conditions_to_file(codes)

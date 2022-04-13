@@ -12,7 +12,12 @@ from faker.providers import person
 from faker import Faker
 
 from insurance import InsuranceProvider, group, member_id
-from icd import MedicalCondition, MedicalConditionCategory
+from icd import (
+    MedicalCondition,
+    MedicalConditionCategory,
+    read_categories_from_file,
+    read_conditions_from_file,
+)
 from auto_increment import AutoIncrement
 
 fake = Faker()
@@ -823,7 +828,9 @@ class MockGenerator:
 
 if __name__ == "__main__":
     config = MockGeneratorConfig(prescription_count=3)
-    mock = MockGenerator([], config)
+    conditions = read_conditions_from_file()
+    # categories = read_categories_from_file()
+    mock = MockGenerator([conditions], config)
     pprint(mock.tests_accepted)
 
     # pprint(mock)
