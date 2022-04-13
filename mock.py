@@ -1,4 +1,5 @@
 # pylint: skip-file
+from asyncore import write
 from collections import OrderedDict
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -12,7 +13,10 @@ from faker.providers import person
 
 from auto_increment import AutoIncrement
 from icd import MedicalCondition, read_conditions_from_file
-from insurance import InsuranceProvider, group, member_id
+from insurance import InsuranceProvider, random_group, random_member_id
+from operator import attrgetter
+
+from main import insert_into
 
 fake = Faker()
 Faker.seed(0)
@@ -21,48 +25,48 @@ Counter = count()
 auto_id = AutoIncrement()
 
 
-def name() -> str:
+def random_name() -> str:
     # TODO: Potentially add custom name building, to prevent prefixes and suffixes from happening,
     return fake.name()
 
 
-def ssn() -> str:
+def random_ssn() -> str:
     return fake.unique.ssn()
 
 
-def address() -> str:
+def random_address() -> str:
     # return fake.address().replace('\n', ' ')
     return fake.address()
 
 
-def nurse_license() -> str:
+def random_nurse_license() -> str:
     """https://madph.mylicense.com/eGov/custom/LN%20Formats.htm"""
     return fake.unique.bothify(text="RN-####")
 
 
-def dea_number() -> str:
+def random_dea_number() -> str:
     """https://en.wikipedia.org/wiki/DEA_number"""
     return f"{fake.bothify('?', letters='BM')}{fake.unique.bothify(text='?#######', letters=ascii_uppercase)}"
 
 
-def physician_assistant_license() -> str:
+def random_physician_assistant_license() -> str:
     """https://madph.mylicense.com/eGov/custom/LN%20Formats.htm"""
     return fake.unique.bothify(text="PA-####")
 
 
-def physician_license() -> str:
+def random_physician_license() -> str:
     return fake.unique.bothify(text="GP-####")
 
 
-def phone() -> str:
+def random_phone() -> str:
     return fake.unique.phone_number()
 
 
-def file() -> str:
+def random_file() -> str:
     return fake.file_name()
 
 
-def email() -> str:
+def random_email() -> str:
     return fake.email()
 
 
@@ -85,11 +89,11 @@ def company():
 gender_options = OrderedDict(build_gender_dict())
 
 
-def gender() -> str:
+def random_gender() -> str:
     return fake.random_element(elements=gender_options)
 
 
-def role() -> str:
+def random_role() -> str:
     options = [
         "Physician General Practitioner",
         "Nurse",
@@ -212,58 +216,77 @@ def random_blood_type():
 def random_blood_sugar():
     return fake.random.randint(70, 120)
 
+def get_attributes(cls, excluded=None):
+    if excluded is None:
+        excluded = []
+    return [attr for attr in dir(cls) if not attr.startswith('_') and attr not in excluded]
+
+def get_attribute_values(cls, attributes):
+    return tuple(getattr(cls, attr) for attr in attributes)
+
 
 @dataclass
 class Patient:
     patient_id: int = field(default_factory=lambda: auto_id.next_id("Patient"))
-    phone_number: str = field(default_factory=phone, repr=False)
+    phone_number: str = field(default_factory=random_phone, repr=False)
     birthday: datetime = field(
         default_factory=lambda: date_between(start_date="-60y", end_date="-1y"),
         repr=False,
     )
-    my_email: str = field(default_factory=email, repr=False)
-    my_ssn: str = field(default_factory=ssn, repr=False)
-    my_address: str = field(default_factory=address, repr=False)
-    my_name: str = field(default_factory=name, repr=False)
-    my_gender: str = field(default_factory=gender, repr=False)
+    email: str = field(default_factory=random_email, repr=False)
+    ssn: str = field(default_factory=random_ssn, repr=False)
+    address: str = field(default_factory=random_address, repr=False)
+    name: str = field(default_factory=random_name, repr=False)
+    gender: str = field(default_factory=random_gender, repr=False)
+
+    @property
+    def columns(self) -> str:
+        return f"{('patient_id', 'phone_number', 'birthday', 'email', 'ssn', 'address', 'name', 'gender')}"
+
+    @property
+    def row_values(self) -> str:
+        return ""
+
+    def example_function(self):
+        return ''
 
 
 @dataclass
 class Employee:
     emp_id: int = field(default_factory=lambda: auto_id.next_id("Employee"))
-    phone_number: str = field(default_factory=phone, repr=False)
+    phone_number: str = field(default_factory=random_phone, repr=False)
     birthday: datetime = field(
         default_factory=lambda: date_between(start_date="-60y", end_date="-20y"),
         repr=False,
     )
-    my_email: str = field(default_factory=email, repr=False)
-    my_ssn: str = field(default_factory=ssn)
-    my_address: str = field(default_factory=address, repr=False)
-    my_name: str = field(default_factory=name, repr=False)
-    my_gender: str = field(default_factory=gender, repr=False)
-    my_role: str = field(default_factory=role, repr=False)
+    email: str = field(default_factory=random_email, repr=False)
+    ssn: str = field(default_factory=random_ssn)
+    address: str = field(default_factory=random_address, repr=False)
+    name: str = field(default_factory=random_name, repr=False)
+    gender: str = field(default_factory=random_gender, repr=False)
+    role: str = field(default_factory=random_role, repr=False)
     salary: int = field(init=False, repr=False)
-    my_dea_number: str = field(init=False, default=None, repr=False)
-    my_medical_license_number: str = field(init=False, default=None, repr=False)
+    dea_number: str = field(init=False, default=None, repr=False)
+    medical_license_number: str = field(init=False, default=None, repr=False)
 
     def __post_init__(self):
-        """This logic assigns the salary and medical license based on the randomly assigned my_role attribute"""
-        if self.my_role in ["Receptionist", "Orderly"]:
+        """This logic assigns the salary and medical license based on the randomly assigned role attribute"""
+        if self.role in ["Receptionist", "Orderly"]:
             self.salary = fake.random.randint(15_000, 80_000)
-        elif self.my_role == "Nurse":
+        elif self.role == "Nurse":
             self.salary = fake.random.randint(54_000, 100_000)
-            self.my_medical_license_number = nurse_license()
-            self.my_dea_number = dea_number()
-        elif self.my_role == "Physician Assistant":
+            self.medical_license_number = random_nurse_license()
+            self.dea_number = random_dea_number()
+        elif self.role == "Physician Assistant":
             self.salary = fake.random.randint(94_000, 130_000)
-            self.my_medical_license_number = physician_assistant_license()
-            self.my_dea_number = dea_number()
-        elif self.my_role == "Physician General Practitioner":
+            self.medical_license_number = random_physician_assistant_license()
+            self.dea_number = random_dea_number()
+        elif self.role == "Physician General Practitioner":
             self.salary = fake.random.randint(160_000, 260_000)
-            self.my_medical_license_number = physician_license()
-            self.my_dea_number = dea_number()
+            self.medical_license_number = random_physician_license()
+            self.dea_number = random_dea_number()
         else:
-            raise ValueError(f"{self.my_role} does not fit into the possible roles.")
+            raise ValueError(f"{self.role} does not fit into the possible roles.")
 
 
 @dataclass
@@ -271,7 +294,7 @@ class ArchivedFile:
     patient_id: int
     emp_id: int
     file_id: int = field(default_factory=lambda: auto_id.next_id("ArchivedFile"))
-    file_name: str = field(default_factory=file)
+    file_name: str = field(default_factory=random_file)
     # TODO: Do we want to use mock blobs?
     file_blob: str = field(default=None)
 
@@ -283,14 +306,14 @@ def generate_archived_file(patient: Patient, employee: Employee) -> ArchivedFile
 @dataclass
 class SpecializedLab:
     lab_id: int = field(default_factory=lambda: auto_id.next_id("SpecializedLab"))
-    phone_number: str = field(default_factory=phone)
-    my_address: str = field(default_factory=address)
+    phone_number: str = field(default_factory=random_phone)
+    address: str = field(default_factory=random_address)
 
 
 @dataclass
 class Test:
     test_id: int = field(default_factory=lambda: auto_id.next_id("Test"))
-    test_Name: str = field(default_factory=business_slogan)
+    test_name: str = field(default_factory=business_slogan)
 
 
 @dataclass
@@ -305,7 +328,7 @@ def generate_test_accepted(lab: SpecializedLab, test: Test) -> TestAccepted:
 
 @dataclass
 class Pharmacy:
-    pharmacy_address: str = field(default_factory=address)
+    pharmacy_address: str = field(default_factory=random_address)
     pharmacy_name: str = field(default_factory=company)
 
 
@@ -348,9 +371,9 @@ class ReferrableDoctor:
     ref_doctor_id: int = field(
         default_factory=lambda: auto_id.next_id("ReferrableDoctor")
     )
-    my_name: str = field(default_factory=name)
+    name: str = field(default_factory=random_name)
     specialization: str = field(default_factory=random_specialization)
-    phone_number: str = field(default_factory=phone)
+    phone_number: str = field(default_factory=random_phone)
 
 
 @dataclass
@@ -375,16 +398,16 @@ def generate_referrel(
 class CoveredBy:
     provider_id: int
     patient_id: int
-    my_member_id: str = field(default_factory=member_id)
-    group_number: str = field(default_factory=group)
-    policy_holder_name: str = field(default_factory=name)
+    member_id: str = field(default_factory=random_member_id)
+    group_number: str = field(default_factory=random_group)
+    policy_holder_name: str = field(default_factory=random_name)
 
 
 def generate_covered_by(
     patient: Patient, insurance_provider: InsuranceProvider
 ) -> CoveredBy:
     policy_holder_name = (
-        patient.my_name if fake.boolean(chance_of_getting_true=95) else name()
+        patient.name if fake.boolean(chance_of_getting_true=95) else random_name()
     )
     return CoveredBy(
         provider_id=insurance_provider.provider_id,
@@ -621,6 +644,7 @@ class MockGeneratorConfig:
     experiencing_count_max: int = field(default=2)
     relative_condition_max: int = field(default=2)
 
+
 @dataclass
 class MockGenerator:
     medical_conditions: List[MedicalCondition]
@@ -665,25 +689,25 @@ class MockGenerator:
     )
 
     def __post_init__(self):
-        self.generate_independent_schema()
-        self.generate_appointments(self.config.appointment_count)
-        self.generate_covered_bys()
-        self.generate_relatives()
-        self.generate_prescriptions()
-        self.generate_immunizations()
-        self.generate_referrals()
-        self.generate_archived_files()
-        self.generate_medical_staff()
-        self.generate_tests_accepted()
-        self.generate_experiencing()
-        self.generate_relative_conditions()
-        self.generate_diagnosis()
-        self.generate_lab_reports()
-        self.generate_conducted_bys()
-        self.generate_exams()
-        self.generate_exam_subclasses()
+        self._generate_independent_schema()
+        self._generate_appointments(self.config.appointment_count)
+        self._generate_covered_bys()
+        self._generate_relatives()
+        self._generate_prescriptions()
+        self._generate_immunizations()
+        self._generate_referrals()
+        self._generate_archived_files()
+        self._generate_medical_staff()
+        self._generate_tests_accepted()
+        self._generate_experiencing()
+        self._generate_relative_conditions()
+        self._generate_diagnosis()
+        self._generate_lab_reports()
+        self._generate_conducted_bys()
+        self._generate_exams()
+        self._generate_exam_subclasses()
 
-    def generate_independent_schema(self):
+    def _generate_independent_schema(self):
         self.patients = [Patient() for _ in range(self.config.patient_count)]
         self.employees = [Employee() for _ in range(self.config.employee_count)]
         self.insurance_providers = [
@@ -701,48 +725,48 @@ class MockGenerator:
             ReferrableDoctor() for _ in range(self.config.referrable_doctor_count)
         ]
 
-    def generate_appointments(self, count: int):
+    def _generate_appointments(self, count: int):
         random_patients = fake.random_choices(elements=self.patients, length=count)
         self.appointments.extend(
             generate_appointment(patient) for patient in random_patients
         )
 
-    def generate_covered_bys(self):
+    def _generate_covered_bys(self):
         # TODO: Ensure there are no duplicates in this table, can possibly make covered by frozen, and use set
         quantity = self.config.covered_by_count
         self.covered_bys = [
             generate_covered_by(patient, provider)
-            for patient, provider in self.random_selector(
+            for patient, provider in self._random_selector(
                 self.patients, self.insurance_providers, quantity=quantity
             )
         ]
 
-    def generate_relatives(self):
+    def _generate_relatives(self):
         random_patients = fake.random_choices(
             elements=self.patients, length=self.config.relative_count
         )
         self.relatives = [generate_relative(patient) for patient in random_patients]
 
-    def generate_prescriptions(self):
+    def _generate_prescriptions(self):
         quantity = self.config.prescription_count
         self.prescriptions = [
             generate_prescription(pharmacy, employee, patient)
-            for pharmacy, employee, patient in self.random_selector(
+            for pharmacy, employee, patient in self._random_selector(
                 self.pharmacies, self.employees, self.patients, quantity=quantity
             )
         ]
 
-    def random_selector(self, *args, quantity=None) -> zip:
+    def _random_selector(self, *args, quantity=None) -> zip:
         if quantity is None:
             raise ValueError("Must specify quantity")
         return zip(
             *(iter(fake.random_choices(elements=arg, length=quantity)) for arg in args)
         )
 
-    def generate_immunizations(self):
+    def _generate_immunizations(self):
         self.immunized_bys = [
             generate_immunized_by(immunization, patient)
-            for immunization, patient in self.random_selector(
+            for immunization, patient in self._random_selector(
                 self.immunizations,
                 self.patients,
                 quantity=self.config.immunized_by_count,
@@ -750,17 +774,17 @@ class MockGenerator:
         ]
         self.emp_immunizations = [
             generate_emp_immunization(immunization, employee)
-            for immunization, employee in self.random_selector(
+            for immunization, employee in self._random_selector(
                 self.immunizations,
                 self.employees,
                 quantity=self.config.immunized_by_count,
             )
         ]
 
-    def generate_referrals(self):
+    def _generate_referrals(self):
         self.referrals = [
             generate_referrel(employee, referrable, patient)
-            for employee, referrable, patient in self.random_selector(
+            for employee, referrable, patient in self._random_selector(
                 self.employees,
                 self.referrable_doctors,
                 self.patients,
@@ -768,15 +792,15 @@ class MockGenerator:
             )
         ]
 
-    def generate_archived_files(self):
+    def _generate_archived_files(self):
         self.archived_files = [
             generate_archived_file(patient, employee)
-            for patient, employee in self.random_selector(
+            for patient, employee in self._random_selector(
                 self.patients, self.employees, quantity=self.config.archived_file_count
             )
         ]
 
-    def generate_medical_staff(self):
+    def _generate_medical_staff(self):
         """Every appointment must have at least 1 medical staff"""
         medical_staff = []
         for app in self.appointments:
@@ -787,7 +811,7 @@ class MockGenerator:
                 medical_staff.append(generate_medical_staff(employee, app))
         self.medical_staff = medical_staff
 
-    def generate_tests_accepted(self):
+    def _generate_tests_accepted(self):
         """Every appointment must have at least 1 medical staff"""
         tests_accepted = []
         for lab in self.specialized_labs:
@@ -798,7 +822,7 @@ class MockGenerator:
                 tests_accepted.append(generate_test_accepted(lab, test))
         self.tests_accepted = tests_accepted
 
-    def generate_experiencing(self):
+    def _generate_experiencing(self):
         experiencing = []
         for app in self.appointments:
             random_length = fake.random.randint(1, self.config.experiencing_count_max)
@@ -808,7 +832,7 @@ class MockGenerator:
                 experiencing.append(generate_experiencing(app, condition))
         self.experiencing = experiencing
 
-    def generate_relative_conditions(self):
+    def _generate_relative_conditions(self):
         relative_conditions = []
         for relative in self.relatives:
             random_length = fake.random.randint(1, self.config.relative_condition_max)
@@ -820,7 +844,7 @@ class MockGenerator:
                 )
         self.relative_conditions = relative_conditions
 
-    def generate_diagnosis(self):
+    def _generate_diagnosis(self):
         diagnosis = []
         for app in self.appointments:
             random_length = fake.random.randint(0, self.config.diagnosis_count_max)
@@ -835,10 +859,10 @@ class MockGenerator:
                 )
         self.diagnosis = diagnosis
 
-    def generate_lab_reports(self):
+    def _generate_lab_reports(self):
         self.lab_reports = [
             generate_lab_report(con, app, f)
-            for con, app, f in self.random_selector(
+            for con, app, f in self._random_selector(
                 self.medical_conditions,
                 self.appointments,
                 self.archived_files,
@@ -846,7 +870,7 @@ class MockGenerator:
             )
         ]
 
-    def generate_conducted_bys(self):
+    def _generate_conducted_bys(self):
         self.conducted_bys = [
             generate_conducted_by(report, lab)
             for report, lab in zip(
@@ -857,15 +881,15 @@ class MockGenerator:
             )
         ]
 
-    def generate_exams(self):
+    def _generate_exams(self):
         self.exams = [
             generate_exam(report, app)
-            for report, app in self.random_selector(
+            for report, app in self._random_selector(
                 self.lab_reports, self.appointments, quantity=self.config.exam_count
             )
         ]
 
-    def generate_exam_subclasses(self):
+    def _generate_exam_subclasses(self):
         arrays = [self.blood_exams, self.covid_exams, self.vaccine_administered]
         exam_types: List[ExamInterface] = [BloodExam, CovidExam, VaccineAdministration]
         for exam in self.exams:
@@ -873,6 +897,29 @@ class MockGenerator:
             arrays[random_selection_idx].append(
                 exam_types[random_selection_idx](exam.exam_id)
             )
+
+def build_insert_statement(cls_array):
+    first = cls_array[0]
+    attrs = get_attributes(first, ['example_function', 'columns', 'row_values'])
+    table_name = type(first).__name__
+    values = (get_attribute_values(cls, attrs) for cls in cls_array)
+    return insert_into(column_names=attrs, table_name=table_name, values=map(str,values))
+
+def build_all_insert_statements(cls_arrays):
+    insert_statements = []
+    for cls_array in cls_arrays:
+        if not cls_array:
+            # no generated mock data for this attribute
+            continue
+        insert_statements.append(build_insert_statement(cls_array))
+    return insert_statements
+    
+
+def write_insert_statement(statements: List[str]):
+    with open("example.sql", "wt", encoding="utf-8") as f:
+        for statement in statements:
+            print(statement, file=f, end='\n\n')
+
 
 
 if __name__ == "__main__":
@@ -883,3 +930,17 @@ if __name__ == "__main__":
     pprint(mock.blood_exams)
     pprint(mock.covid_exams)
     pprint(mock.vaccine_administered)
+
+    patient_1 = mock.patients[0]
+    pprint(patient_1)
+    pprint(patient_1.columns)
+    # attrs = get_attributes(patient_1, ['example_function', 'columns', 'row_values'])
+    tables_to_insert = get_attributes(mock, ['medical_conditions', 'config'])
+    pprint(tables_to_insert)
+    table_values_to_insert = get_attribute_values(mock, tables_to_insert)
+    pprint(table_values_to_insert)
+    write_insert_statement(build_all_insert_statements(table_values_to_insert))
+    # pprint(tables_to_insert)
+    # pprint(attrs)
+    # pprint(get_attribute_values(patient_1, attrs))
+    # pprint(build_insert_statement(mock.patients))
