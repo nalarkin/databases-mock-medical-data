@@ -2,6 +2,7 @@
 from collections import OrderedDict
 from dataclasses import dataclass, field
 from datetime import datetime
+from email.generator import Generator
 from itertools import count
 from pprint import pprint
 from string import ascii_uppercase
@@ -216,33 +217,35 @@ def random_blood_sugar():
 @dataclass
 class Patient:
     patient_id: int = field(default_factory=lambda: auto_id.next_id("Patient"))
-    phone_number: str = field(default_factory=phone)
+    phone_number: str = field(default_factory=phone, repr=False)
     birthday: datetime = field(
-        default_factory=lambda: date_between(start_date="-60y", end_date="-1y")
+        default_factory=lambda: date_between(start_date="-60y", end_date="-1y"),
+        repr=False,
     )
-    my_email: str = field(default_factory=email)
-    my_ssn: str = field(default_factory=ssn)
-    my_address: str = field(default_factory=address)
-    my_name: str = field(default_factory=name)
-    my_gender: str = field(default_factory=gender)
+    my_email: str = field(default_factory=email, repr=False)
+    my_ssn: str = field(default_factory=ssn, repr=False)
+    my_address: str = field(default_factory=address, repr=False)
+    my_name: str = field(default_factory=name, repr=False)
+    my_gender: str = field(default_factory=gender, repr=False)
 
 
 @dataclass
 class Employee:
     emp_id: int = field(default_factory=lambda: auto_id.next_id("Employee"))
-    phone_number: str = field(default_factory=phone)
+    phone_number: str = field(default_factory=phone, repr=False)
     birthday: datetime = field(
-        default_factory=lambda: date_between(start_date="-60y", end_date="-20y")
+        default_factory=lambda: date_between(start_date="-60y", end_date="-20y"),
+        repr=False,
     )
-    my_email: str = field(default_factory=email)
+    my_email: str = field(default_factory=email, repr=False)
     my_ssn: str = field(default_factory=ssn)
-    my_address: str = field(default_factory=address)
-    my_name: str = field(default_factory=name)
-    my_gender: str = field(default_factory=gender)
-    my_role: str = field(default_factory=role)
-    salary: int = field(init=False)
-    my_dea_number: str = field(init=False, default=None)
-    my_medical_license_number: str = field(init=False, default=None)
+    my_address: str = field(default_factory=address, repr=False)
+    my_name: str = field(default_factory=name, repr=False)
+    my_gender: str = field(default_factory=gender, repr=False)
+    my_role: str = field(default_factory=role, repr=False)
+    salary: int = field(init=False, repr=False)
+    my_dea_number: str = field(init=False, default=None, repr=False)
+    my_medical_license_number: str = field(init=False, default=None, repr=False)
 
     def __post_init__(self):
         """This logic assigns the salary and medical license based on the randomly assigned my_role attribute"""
@@ -426,7 +429,7 @@ class Prescription:
         default_factory=lambda: auto_id.next_id("Prescription")
     )
     # TODO: come up with better drug name generator?
-    drug_name: str = field(default_factory=company)
+    drug_name: str = field(default_factory=company, repr=False)
     quantity: int = field(default_factory=lambda: fake.random.randint(1, 180))
     refills: int = field(default_factory=lambda: fake.random.randint(0, 7))
     instructions: Optional[str] = field(
@@ -562,8 +565,13 @@ def generate_exam(report: LabReport, appointment: Appointment) -> Exam:
 
 
 @dataclass
-class CovidExam:
+class ExamInterface:
     exam_id: int
+
+
+@dataclass
+class CovidExam(ExamInterface):
+    # exam_id: int
     test_type: str = field(default_factory=random_covid_exam)
     is_positive: bool = field(
         default_factory=lambda: fake.boolean(chance_of_getting_true=10)
@@ -575,8 +583,7 @@ def generate_covid_exam(exam: Exam) -> CovidExam:
 
 
 @dataclass
-class BloodExam:
-    exam_id: int
+class BloodExam(ExamInterface):
     blood_type: str = field(default_factory=random_blood_type)
     blood_sugar: int = field(default_factory=random_blood_sugar)
 
@@ -586,8 +593,7 @@ def generate_blood_exam(exam: Exam) -> BloodExam:
 
 
 @dataclass
-class VaccineAdministration:
-    exam_id: int
+class VaccineAdministration(ExamInterface):
     vaccine_type: str = field(default_factory=random_immunization)
 
 
@@ -611,7 +617,7 @@ class MockGeneratorConfig:
     covered_by_count: int = field(default=5)
     relative_count: int = field(default=5)
     prescription_count: int = field(default=5)
-    immunization_by_count: int = field(default=5)
+    immunized_by_count: int = field(default=5)
     emp_immunization_count: int = field(default=5)
     referral_count: int = field(default=5)
     appointment_count: int = field(default=5)
@@ -650,16 +656,21 @@ class MockGenerator:
     immunizations: List[Immunization] = field(init=False)
     referrable_doctors: List[ReferrableDoctor] = field(init=False)
 
+    # exam subclasses go here
+    exam_types: List[ExamInterface] = field(
+        default_factory=lambda: [BloodExam, CovidExam, VaccineAdministration]
+    )
+
     # all schema below are dependent schema
     appointments: List[Appointment] = field(init=False, default_factory=list)
     covered_bys: List[CoveredBy] = field(init=False, default_factory=list)
     relatives: List[Relative] = field(init=False, default_factory=list)
-    # CURRENT PROGRESS
     prescriptions: List[Prescription] = field(init=False, default_factory=list)
-    immunization_bys: List[ImmunizedBy] = field(init=False, default_factory=list)
+    immunized_bys: List[ImmunizedBy] = field(init=False, default_factory=list)
     emp_immunizations: List[EmpImmunization] = field(init=False, default_factory=list)
     referrals: List[Referral] = field(init=False, default_factory=list)
     conducted_bys: List[ConductedBy] = field(init=False, default_factory=list)
+    # CURRENT PROGRESS
     covid_exams: List[CovidExam] = field(init=False, default_factory=list)
     blood_exams: List[BloodExam] = field(init=False, default_factory=list)
     vaccine_administered: List[VaccineAdministration] = field(
@@ -685,6 +696,12 @@ class MockGenerator:
         self.generate_appointments(self.config.appointment_count)
         self.generate_covered_bys()
         self.generate_relatives()
+        self.generate_prescriptions()
+        self.generate_immunizations()
+        self.generate_referrals()
+        self.generate_archived_files()
+        self.generate_medical_staff()
+        self.generate_tests_accepted()
 
     def generate_independent_schema(self):
         self.patients = [Patient() for _ in range(self.config.patient_count)]
@@ -713,23 +730,102 @@ class MockGenerator:
     def generate_covered_bys(self):
         # TODO: Ensure there are no duplicates in this table, can possibly make covered by frozen, and use set
         quantity = self.config.covered_by_count
-        random_providers = fake.random_choices(elements=self.insurance_providers, length=quantity)
-        random_patients = fake.random_choices(elements=self.patients, length=quantity)
         self.covered_bys = [
-            generate_covered_by(patient, provider) for patient, provider in zip(random_patients, random_providers)
+            generate_covered_by(patient, provider)
+            for patient, provider in self.random_selector(
+                self.patients, self.insurance_providers, quantity=quantity
+            )
         ]
 
     def generate_relatives(self):
-        random_patients = fake.random_choices(elements=self.patients, length=self.config.relative_count)
-        self.relatives = [
-            generate_relative(patient) for patient in random_patients
+        random_patients = fake.random_choices(
+            elements=self.patients, length=self.config.relative_count
+        )
+        self.relatives = [generate_relative(patient) for patient in random_patients]
+
+    def generate_prescriptions(self):
+        quantity = self.config.prescription_count
+        self.prescriptions = [
+            generate_prescription(pharmacy, employee, patient)
+            for pharmacy, employee, patient in self.random_selector(
+                self.pharmacies, self.employees, self.patients, quantity=quantity
+            )
         ]
+
+    def random_selector(self, *args, quantity=None) -> zip:
+        if quantity is None:
+            raise ValueError("Must specify quantity")
+        return zip(
+            *(iter(fake.random_choices(elements=arg, length=quantity)) for arg in args)
+        )
+
+    def generate_immunizations(self):
+        self.immunized_bys = [
+            generate_immunized_by(immunization, patient)
+            for immunization, patient in self.random_selector(
+                self.immunizations,
+                self.patients,
+                quantity=self.config.immunized_by_count,
+            )
+        ]
+        self.emp_immunizations = [
+            generate_emp_immunization(immunization, employee)
+            for immunization, employee in self.random_selector(
+                self.immunizations,
+                self.employees,
+                quantity=self.config.immunized_by_count,
+            )
+        ]
+
+    def generate_referrals(self):
+        self.referrals = [
+            generate_referrel(employee, referrable, patient)
+            for employee, referrable, patient in self.random_selector(
+                self.employees,
+                self.referrable_doctors,
+                self.patients,
+                quantity=self.config.referral_count,
+            )
+        ]
+
+    def generate_archived_files(self):
+        self.archived_files = [
+            generate_archived_file(patient, employee)
+            for patient, employee in self.random_selector(
+                self.patients, self.employees, quantity=self.config.archived_file_count
+            )
+        ]
+
+    def generate_medical_staff(self):
+        """Every appointment must have at least 1 medical staff"""
+        medical_staff = []
+
+        for app in self.appointments:
+            random_length = fake.random.randint(1, self.config.medical_staff_count_max)
+            for employee in fake.random_elements(
+                elements=self.employees, unique=True, length=random_length
+            ):
+                medical_staff.append(generate_medical_staff(employee, app))
+        self.medical_staff = medical_staff
+
+    def generate_tests_accepted(self):
+        """Every appointment must have at least 1 medical staff"""
+        tests_accepted = []
+
+        for lab in self.specialized_labs:
+            random_length = fake.random.randint(1, self.config.test_accepted_count_max)
+            for test in fake.random_elements(
+                elements=self.tests, unique=True, length=random_length
+            ):
+                tests_accepted.append(generate_test_accepted(lab, test))
+        self.tests_accepted = tests_accepted
 
 
 if __name__ == "__main__":
-    config = MockGeneratorConfig()
+    config = MockGeneratorConfig(prescription_count=3)
     mock = MockGenerator([], config)
-    pprint(mock.patients)
+    pprint(mock.tests_accepted)
+
     # pprint(mock)
     # choices = [Patient() for _ in range(3)]
     # for patient in fake.random_choices(elements=choices, length=4):
