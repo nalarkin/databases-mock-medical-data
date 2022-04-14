@@ -34,7 +34,7 @@ def random_address() -> str:
 
 def random_nurse_license() -> str:
     """https://madph.mylicense.com/eGov/custom/LN%20Formats.htm"""
-    return fake.unique.bothify(text="RN-####")
+    return fake.unique.bothify(text="RN####")
 
 
 def random_dea_number() -> str:
@@ -44,11 +44,11 @@ def random_dea_number() -> str:
 
 def random_physician_assistant_license() -> str:
     """https://madph.mylicense.com/eGov/custom/LN%20Formats.htm"""
-    return fake.unique.bothify(text="PA-####")
+    return fake.unique.bothify(text="PA####")
 
 
 def random_physician_license() -> str:
-    return fake.unique.bothify(text="GP-####")
+    return fake.unique.bothify(text="GP####")
 
 
 def random_phone() -> str:
@@ -253,7 +253,7 @@ class Patient:
     address: str = field(default_factory=random_address, repr=False)
     name: str = field(default_factory=random_name, repr=False)
     gender: str = field(default_factory=random_gender, repr=False)
-    table_name: str = field(default="Patients", init=False)
+    table_name: str = field(default="patients", init=False)
 
 
 @dataclass
@@ -275,7 +275,7 @@ class Employee:
     salary: int = field(init=False, repr=False)
     dea_number: str = field(init=False, default=None, repr=False)
     medical_license_number: str = field(init=False, default=None, repr=False)
-    table_name: str = field(default="Employees", init=False)
+    table_name: str = field(default="employees", init=False)
 
     def __post_init__(self):
         """This logic assigns the salary and medical license based on the randomly assigned role attribute"""
@@ -317,32 +317,32 @@ class SpecializedLab:
     lab_id: int = field(default_factory=lambda: auto_id.next_id("SpecializedLab"))
     phone_number: str = field(default_factory=random_phone)
     address: str = field(default_factory=random_address)
-    table_name: str = field(default="SpecializedLabs", init=False)
+    table_name: str = field(default="specializedLabs", init=False)
 
 
 @dataclass
 class Test:
     test_id: int = field(default_factory=lambda: auto_id.next_id("Test"))
     test_name: str = field(default_factory=business_slogan)
-    table_name: str = field(default="Tests", init=False)
+    table_name: str = field(default="tests", init=False)
 
 
 @dataclass
-class TestAccepted:
+class AcceptedTest:
     test_id: int
     lab_id: int
-    table_name: str = field(default="TestsAccepted", init=False)
+    table_name: str = field(default="accepted_tests", init=False)
 
 
-def generate_test_accepted(lab: SpecializedLab, test: Test) -> TestAccepted:
-    return TestAccepted(test_id=test.test_id, lab_id=lab.lab_id)
+def generate_test_accepted(lab: SpecializedLab, test: Test) -> AcceptedTest:
+    return AcceptedTest(test_id=test.test_id, lab_id=lab.lab_id)
 
 
 @dataclass
 class Pharmacy:
     pharmacy_address: str = field(default_factory=random_address)
     pharmacy_name: str = field(default_factory=company)
-    table_name: str = field(default="Pharmacies", init=False)
+    table_name: str = field(default="pharmacies", init=False)
 
 
 @dataclass
@@ -351,33 +351,35 @@ class Immunization:
         default_factory=lambda: auto_id.next_id("Immunization")
     )
     immunization_type: str = field(default_factory=random_immunization)
-    table_name: str = field(default="Immunizations", init=False)
+    table_name: str = field(default="immunizations", init=False)
 
 
 @dataclass
-class EmpImmunization:
+class ImmunizedEmployee:
     immunization_id: int
     emp_id: int
-    table_name: str = field(default="EmpImmunizations", init=False)
+    table_name: str = field(default="immunized_employees", init=False)
 
 
-def generate_emp_immunization(
+def generate_immunized_employees(
     immunization: Immunization, employee: Employee
-) -> EmpImmunization:
-    return EmpImmunization(
+) -> ImmunizedEmployee:
+    return ImmunizedEmployee(
         immunization_id=immunization.immunization_id, emp_id=employee.emp_id
     )
 
 
 @dataclass
-class ImmunizedBy:
+class ImmunizedPatient:
     immunization_id: int
     patient_id: int
-    table_name: str = field(default="ImmunizedBys", init=False)
+    table_name: str = field(default="immunized_patients", init=False)
 
 
-def generate_immunized_by(immunization: Immunization, patient: Patient) -> ImmunizedBy:
-    return ImmunizedBy(
+def generate_immunized_patients(
+    immunization: Immunization, patient: Patient
+) -> ImmunizedPatient:
+    return ImmunizedPatient(
         immunization_id=immunization.immunization_id, patient_id=patient.patient_id
     )
 
@@ -390,7 +392,7 @@ class ReferrableDoctor:
     name: str = field(default_factory=random_name)
     specialization: str = field(default_factory=random_specialization)
     phone_number: str = field(default_factory=random_phone)
-    table_name: str = field(default="ReferrableDoctors", init=False)
+    table_name: str = field(default="referrable_doctors", init=False)
 
 
 @dataclass
@@ -399,7 +401,7 @@ class Referral:
     ref_doctor_id: int
     patient_id: int
     ref_id: int = field(default_factory=lambda: auto_id.next_id("Referral"))
-    table_name: str = field(default="Referrals", init=False)
+    table_name: str = field(default="referrals", init=False)
 
 
 def generate_referrel(
@@ -413,22 +415,22 @@ def generate_referrel(
 
 
 @dataclass
-class CoveredBy:
+class InsuranceCover:
     provider_id: int
     patient_id: int
     member_id: str = field(default_factory=random_member_id)
     group_number: str = field(default_factory=random_group)
     policy_holder_name: str = field(default_factory=random_name)
-    table_name: str = field(default="CoveredBys", init=False)
+    table_name: str = field(default="insurance_covers", init=False)
 
 
-def generate_covered_by(
+def generate_insurance_covers(
     patient: Patient, insurance_provider: InsuranceProvider
-) -> CoveredBy:
+) -> InsuranceCover:
     policy_holder_name = (
         patient.name if fake.boolean(chance_of_getting_true=95) else random_name()
     )
-    return CoveredBy(
+    return InsuranceCover(
         provider_id=insurance_provider.provider_id,
         patient_id=patient.patient_id,
         policy_holder_name=policy_holder_name,
@@ -441,10 +443,10 @@ class Relative:
     relative_id: int = field(default_factory=lambda: auto_id.next_id("Relative"))
     relative_type: str = field(default_factory=random_relative_type)
     additional_notes: Optional[str] = field(default_factory=random_notes, repr=False)
-    table_name: str = field(default="Relatives", init=False)
+    table_name: str = field(default="relatives", init=False)
 
 
-def generate_relative(patient: Patient) -> CoveredBy:
+def generate_relative(patient: Patient) -> InsuranceCover:
     return Relative(patient_id=patient.patient_id)
 
 
@@ -452,12 +454,12 @@ def generate_relative(patient: Patient) -> CoveredBy:
 class RelativeCondition:
     relative_id: int
     icd_code: str
-    table_name: str = field(default="RelativeConditions", init=False)
+    table_name: str = field(default="relative_conditions", init=False)
 
 
 def generate_relative_condition(
     relative: Relative, condition: MedicalCondition
-) -> CoveredBy:
+) -> InsuranceCover:
     return RelativeCondition(
         relative_id=relative.relative_id, icd_code=condition.icd_code
     )
@@ -481,7 +483,7 @@ class Prescription:
     prescription_date: str = field(
         default_factory=lambda: date_time_between(timedelta(weeks=(-60 * 12)))
     )
-    table_name: str = field(default="Prescriptions", init=False)
+    table_name: str = field(default="prescriptions", init=False)
 
 
 def generate_prescription(
@@ -510,7 +512,7 @@ class Appointment:
         default_factory=lambda: round(fake.random.uniform(96.0, 106.0), 2)
     )
     notes: Optional[str] = field(default_factory=lambda: random_notes())
-    table_name: str = field(default="Appointments", init=False)
+    table_name: str = field(default="appointments", init=False)
 
 
 def generate_appointment(patient: Patient) -> Appointment:
@@ -525,7 +527,7 @@ class LabReport:
     report_id: int = field(default_factory=lambda: auto_id.next_id("LabReport"))
     info: Optional[str] = field(default_factory=lambda: random_notes(80, 2))
     result_info: Optional[str] = field(default_factory=lambda: random_notes(80, 3))
-    table_name: str = field(default="LabReports", init=False)
+    table_name: str = field(default="lab_reports", init=False)
 
 
 def generate_lab_report(
@@ -541,30 +543,32 @@ def generate_lab_report(
 
 
 @dataclass
-class Experiencing:
+class AppointmentMedicalCondition:
     app_id: int
     icd_code: str
     comment: Optional[str] = field(default_factory=lambda: random_notes(40, 2))
-    table_name: str = field(default="Experiencing", init=False)
+    table_name: str = field(default="appointment_medical_conditions", init=False)
 
 
-def generate_experiencing(
+def generate_appointment_medical_conditions(
     appointment: Appointment, medical_condition: MedicalCondition
-) -> Experiencing:
-    return Experiencing(app_id=appointment.app_id, icd_code=medical_condition.icd_code)
+) -> AppointmentMedicalCondition:
+    return AppointmentMedicalCondition(
+        app_id=appointment.app_id, icd_code=medical_condition.icd_code
+    )
 
 
 @dataclass
-class MedicalStaff:
+class AppointmentEmployee:
     emp_id: int
     app_id: int
-    table_name: str = field(default="MedicalStaff", init=False)
+    table_name: str = field(default="appointment_employees", init=False)
 
 
-def generate_medical_staff(
+def generate_appointment_employees(
     employee: Employee, appointment: Appointment
-) -> MedicalStaff:
-    return MedicalStaff(emp_id=employee.emp_id, app_id=appointment.app_id)
+) -> AppointmentEmployee:
+    return AppointmentEmployee(emp_id=employee.emp_id, app_id=appointment.app_id)
 
 
 @dataclass
@@ -574,7 +578,7 @@ class Diagnosis:
     app_id: int
     icd_code: str
     comment: Optional[str] = field(default_factory=lambda: random_notes(90, 3))
-    table_name: str = field(default="Diagnoses", init=False)
+    table_name: str = field(default="diagnoses", init=False)
 
 
 def generate_diagnosis(
@@ -592,16 +596,16 @@ def generate_diagnosis(
 
 
 @dataclass
-class ConductedBy:
+class ReportCreator:
     report_id: int
     lab_id: int
-    table_name: str = field(default="ConductedBys", init=False)
+    table_name: str = field(default="report_creators", init=False)
 
 
-def generate_conducted_by(
+def generate_report_creator(
     report: LabReport, specialized_lab: SpecializedLab
-) -> ConductedBy:
-    return ConductedBy(report_id=report.report_id, lab_id=specialized_lab.lab_id)
+) -> ReportCreator:
+    return ReportCreator(report_id=report.report_id, lab_id=specialized_lab.lab_id)
 
 
 @dataclass
@@ -610,7 +614,7 @@ class Exam:
     app_id: int
     exam_id: int = field(default_factory=lambda: auto_id.next_id("Exam"))
     comment: Optional[str] = field(default_factory=lambda: random_notes(60, 2))
-    table_name: str = field(default="Exams", init=False)
+    table_name: str = field(default="exams", init=False)
 
 
 def generate_exam(report: LabReport, appointment: Appointment) -> Exam:
@@ -628,20 +632,20 @@ class CovidExam(ExamInterface):
     is_positive: bool = field(
         default_factory=lambda: fake.boolean(chance_of_getting_true=10)
     )
-    table_name: str = field(default="CovidExams", init=False)
+    table_name: str = field(default="covid_exams", init=False)
 
 
 @dataclass
 class BloodExam(ExamInterface):
     blood_type: str = field(default_factory=random_blood_type)
     blood_sugar: int = field(default_factory=random_blood_sugar)
-    table_name: str = field(default="BloodExam", init=False)
+    table_name: str = field(default="blood_exams", init=False)
 
 
 @dataclass
-class VaccineAdministration(ExamInterface):
+class AdministeredVaccine(ExamInterface):
     vaccine_type: str = field(default_factory=random_immunization)
-    table_name: str = field(default="VaccineAdministrations", init=False)
+    table_name: str = field(default="administered_vaccines", init=False)
 
 
 @dataclass
@@ -694,16 +698,16 @@ class MockGenerator:
 
     # all schema below are dependent schema
     appointments: List[Appointment] = field(init=False, default_factory=list)
-    covered_bys: List[CoveredBy] = field(init=False, default_factory=list)
+    covered_bys: List[InsuranceCover] = field(init=False, default_factory=list)
     relatives: List[Relative] = field(init=False, default_factory=list)
     prescriptions: List[Prescription] = field(init=False, default_factory=list)
-    immunized_bys: List[ImmunizedBy] = field(init=False, default_factory=list)
-    emp_immunizations: List[EmpImmunization] = field(init=False, default_factory=list)
+    immunized_bys: List[ImmunizedPatient] = field(init=False, default_factory=list)
+    emp_immunizations: List[ImmunizedEmployee] = field(init=False, default_factory=list)
     referrals: List[Referral] = field(init=False, default_factory=list)
-    conducted_bys: List[ConductedBy] = field(init=False, default_factory=list)
+    conducted_bys: List[ReportCreator] = field(init=False, default_factory=list)
     blood_exams: List[BloodExam] = field(init=False, default_factory=list)
     covid_exams: List[CovidExam] = field(init=False, default_factory=list)
-    vaccine_administered: List[VaccineAdministration] = field(
+    vaccine_administered: List[AdministeredVaccine] = field(
         init=False, default_factory=list
     )
 
@@ -713,10 +717,12 @@ class MockGenerator:
     archived_files: List[ArchivedFile] = field(init=False, default_factory=list)
 
     # M-N relationships, total participation
-    medical_staff: List[MedicalStaff] = field(init=False, default_factory=list)
-    tests_accepted: List[TestAccepted] = field(init=False, default_factory=list)
+    medical_staff: List[AppointmentEmployee] = field(init=False, default_factory=list)
+    tests_accepted: List[AcceptedTest] = field(init=False, default_factory=list)
     diagnosis: List[Diagnosis] = field(init=False, default_factory=list)
-    experiencing: List[Experiencing] = field(init=False, default_factory=list)
+    experiencing: List[AppointmentMedicalCondition] = field(
+        init=False, default_factory=list
+    )
     relative_conditions: List[RelativeCondition] = field(
         init=False, default_factory=list
     )
@@ -768,7 +774,7 @@ class MockGenerator:
         # TODO: Ensure there are no duplicates in this table, can possibly make covered by frozen, and use set
         quantity = self.config.covered_by_count
         self.covered_bys = [
-            generate_covered_by(patient, provider)
+            generate_insurance_covers(patient, provider)
             for patient, provider in self._random_selector(
                 self.patients, self.insurance_providers, quantity=quantity
             )
@@ -798,7 +804,7 @@ class MockGenerator:
 
     def _generate_immunizations(self):
         self.immunized_bys = [
-            generate_immunized_by(immunization, patient)
+            generate_immunized_patients(immunization, patient)
             for immunization, patient in self._random_selector(
                 self.immunizations,
                 self.patients,
@@ -806,7 +812,7 @@ class MockGenerator:
             )
         ]
         self.emp_immunizations = [
-            generate_emp_immunization(immunization, employee)
+            generate_immunized_employees(immunization, employee)
             for immunization, employee in self._random_selector(
                 self.immunizations,
                 self.employees,
@@ -841,7 +847,7 @@ class MockGenerator:
             for employee in fake.random_elements(
                 elements=self.employees, unique=True, length=random_length
             ):
-                medical_staff.append(generate_medical_staff(employee, app))
+                medical_staff.append(generate_appointment_employees(employee, app))
         self.medical_staff = medical_staff
 
     def _generate_tests_accepted(self):
@@ -862,7 +868,9 @@ class MockGenerator:
             for condition in fake.random_elements(
                 elements=self.medical_conditions, unique=True, length=random_length
             ):
-                experiencing.append(generate_experiencing(app, condition))
+                experiencing.append(
+                    generate_appointment_medical_conditions(app, condition)
+                )
         self.experiencing = experiencing
 
     def _generate_relative_conditions(self):
@@ -905,7 +913,7 @@ class MockGenerator:
 
     def _generate_conducted_bys(self):
         self.conducted_bys = [
-            generate_conducted_by(report, lab)
+            generate_report_creator(report, lab)
             for report, lab in zip(
                 self.lab_reports,
                 fake.random_elements(
@@ -924,7 +932,7 @@ class MockGenerator:
 
     def _generate_exam_subclasses(self):
         arrays = [self.blood_exams, self.covid_exams, self.vaccine_administered]
-        exam_types: List[ExamInterface] = [BloodExam, CovidExam, VaccineAdministration]
+        exam_types: List[ExamInterface] = [BloodExam, CovidExam, AdministeredVaccine]
         for exam in self.exams:
             random_selection_idx = fake.random.randint(0, len(exam_types) - 1)
             arrays[random_selection_idx].append(

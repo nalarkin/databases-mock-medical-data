@@ -61,6 +61,10 @@ def write_conditions_to_file(code_data: List[Code]):
 if __name__ == "__main__":
     codes = reader()
     # TODO: Instead of reading categories from icd_code.csv, read it from icd_categories.csv
-
+    largest = ""
+    for code in codes:
+        largest = max(largest, code.complete_code, key=len)
+    print(largest)
+    print(len(largest))
     # write_categories_to_file(codes)
-    write_conditions_to_file(codes)
+    # write_conditions_to_file(codes)
