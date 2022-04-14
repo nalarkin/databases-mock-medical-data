@@ -2,7 +2,6 @@
 from collections import OrderedDict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from pprint import pprint
 from string import ascii_uppercase
 from typing import List, Optional
 
@@ -10,7 +9,6 @@ from faker import Faker
 
 from auto_increment import AutoIncrement
 from icd import MedicalCondition, read_conditions_from_file
-from insurance import InsuranceProvider, random_group, random_member_id
 from main import insert_into
 
 fake = Faker()
@@ -91,7 +89,7 @@ def build_gender_dict():
     return options
 
 
-def company():
+def random_company_name():
     return fake.company()
 
 
@@ -226,6 +224,22 @@ def random_blood_sugar():
     return fake.random.randint(70, 120)
 
 
+def random_member_id() -> str:
+    return fake.unique.bothify("???#########", letters=ascii_uppercase)
+
+
+def random_group_number() -> str:
+    return fake.bothify("######")
+
+
+def random_policy_number() -> str:
+    return fake.bothify("#####")
+
+
+def random_in_network() -> str:
+    return fake.boolean(chance_of_getting_true=80)
+
+
 def get_attributes(cls, excluded=None):
     if excluded is None:
         excluded = []
@@ -298,6 +312,17 @@ class Employee:
 
 
 @dataclass
+class InsuranceProvider:
+    provider_id: int = field(
+        default_factory=lambda: auto_id.next_id("InsuranceProvider")
+    )
+    insurance_name: str = field(default_factory=random_company_name)
+    policy_number: str = field(default_factory=random_policy_number)
+    is_in_network: bool = field(default_factory=random_in_network)
+    table_name: str = field(default="insurance_providers", init=False)
+
+
+@dataclass
 class ArchivedFile:
     patient_id: int
     emp_id: int
@@ -341,7 +366,7 @@ def generate_test_accepted(lab: SpecializedLab, test: Test) -> AcceptedTest:
 @dataclass
 class Pharmacy:
     pharmacy_address: str = field(default_factory=random_address)
-    pharmacy_name: str = field(default_factory=company)
+    pharmacy_name: str = field(default_factory=random_company_name)
     table_name: str = field(default="pharmacies", init=False)
 
 
@@ -419,7 +444,7 @@ class InsuranceCover:
     provider_id: int
     patient_id: int
     member_id: str = field(default_factory=random_member_id)
-    group_number: str = field(default_factory=random_group)
+    group_number: str = field(default_factory=random_group_number)
     policy_holder_name: str = field(default_factory=random_name)
     table_name: str = field(default="insurance_covers", init=False)
 
@@ -474,7 +499,7 @@ class Prescription:
         default_factory=lambda: auto_id.next_id("Prescription")
     )
     # TODO: come up with better drug name generator?
-    drug_name: str = field(default_factory=company, repr=False)
+    drug_name: str = field(default_factory=random_company_name, repr=False)
     quantity: int = field(default_factory=lambda: fake.random.randint(1, 180))
     refills: int = field(default_factory=lambda: fake.random.randint(0, 7))
     instructions: Optional[str] = field(
@@ -981,13 +1006,16 @@ def convert_to_postgres(insert_statements: List[str]) -> List[str]:
     return res
 
 
-if __name__ == "__main__":
+def generate_mock_data_and_write_to_file():
     config = MockGeneratorConfig(prescription_count=3)
-    conditions = read_conditions_from_file()
+    conditions = read_conditions_from_file(max_size=3)
     mock = MockGenerator(conditions, config)
-    patient_1 = mock.patients[0]
     tables_to_insert = get_attributes(mock, ["medical_conditions", "config"])
     table_values_to_insert = get_attribute_values(mock, tables_to_insert)
     insert_statements = build_all_insert_statements(table_values_to_insert)
     postgres_statements = convert_to_postgres(insert_statements)
     write_insert_statement(postgres_statements)
+
+
+if __name__ == "__main__":
+    generate_mock_data_and_write_to_file()

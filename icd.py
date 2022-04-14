@@ -1,5 +1,6 @@
 import csv
 from dataclasses import dataclass
+import math
 from pprint import pprint
 from typing import List
 
@@ -18,25 +19,35 @@ class MedicalConditionCategory:
 
 
 @dataclass
-class Code:
-    category_code: str
-    variant: int
-    complete_code: str
-    name: str
-    name_duplicate: str
-    category: str
+class MedicalConditionSubcategory:
+    subcategory_code: str
+    subcategory_name: str
 
-    @property
-    def insert(self):
-        attributes = (self.complete_code, self.category_code, self.name)
-        # return f"({', '.join(attributes)})"
-        return attributes
+
+# @dataclass
+# class Code:
+#     category_code: str
+#     variant: int
+#     complete_code: str
+#     name: str
+#     name_duplicate: str
+#     category: str
+
+#     @property
+#     def insert(self):
+#         attributes = (self.complete_code, self.category_code, self.name)
+#         # return f"({', '.join(attributes)})"
+#         return attributes
 
 
 CATEGORY_CODE, VARIANT, COMPLETE_CODE, NAME, *_ = 0, 1, 2, 3, 4, 5
 
 
-def read_conditions_from_file() -> List[MedicalCondition]:
+def is_category(word: str) -> bool:
+    return len(word) == 4
+
+
+def read_conditions_from_file(max_size: float = math.inf) -> List[MedicalCondition]:
     filename = "icd_codes.csv"
     with open(filename, mode="rt", encoding="utf-8", newline="\n") as csv_file:
         code_reader = csv.reader(
@@ -44,7 +55,7 @@ def read_conditions_from_file() -> List[MedicalCondition]:
         )
         code_list = []
         for line_number, row in enumerate(code_reader, 1):
-            if line_number > 3:
+            if line_number > max_size:
                 break
             try:
                 code_list.append(
@@ -58,7 +69,9 @@ def read_conditions_from_file() -> List[MedicalCondition]:
         return code_list
 
 
-def read_categories_from_file() -> List[MedicalConditionCategory]:
+def read_categories_from_file(
+    max_size: float = math.inf,
+) -> List[MedicalConditionCategory]:
     filename = "icd_categories.csv"
     with open(filename, mode="rt", encoding="utf-8", newline="\n") as csv_file:
         code_reader = csv.reader(
@@ -66,7 +79,7 @@ def read_categories_from_file() -> List[MedicalConditionCategory]:
         )
         code_list = []
         for line_number, row in enumerate(code_reader, 1):
-            if line_number > 3:
+            if line_number > max_size:
                 break
             try:
                 code_list.append(MedicalConditionCategory(row[0], row[1]))
