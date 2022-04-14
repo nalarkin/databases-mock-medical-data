@@ -253,14 +253,7 @@ class Patient:
     address: str = field(default_factory=random_address, repr=False)
     name: str = field(default_factory=random_name, repr=False)
     gender: str = field(default_factory=random_gender, repr=False)
-
-    @property
-    def columns(self) -> str:
-        return f"{('patient_id', 'phone_number', 'birthday', 'email', 'ssn', 'address', 'name', 'gender')}"
-
-    @property
-    def row_values(self) -> str:
-        return ""
+    table_name: str = field(default="Patients", init=False)
 
 
 @dataclass
@@ -282,6 +275,7 @@ class Employee:
     salary: int = field(init=False, repr=False)
     dea_number: str = field(init=False, default=None, repr=False)
     medical_license_number: str = field(init=False, default=None, repr=False)
+    table_name: str = field(default="Employees", init=False)
 
     def __post_init__(self):
         """This logic assigns the salary and medical license based on the randomly assigned role attribute"""
@@ -311,6 +305,7 @@ class ArchivedFile:
     file_name: str = field(default_factory=random_file)
     # TODO: Do we want to use mock blobs?
     file_blob: str = field(default=None)
+    table_name: str = field(default="ArchivedFiles", init=False)
 
 
 def generate_archived_file(patient: Patient, employee: Employee) -> ArchivedFile:
@@ -322,18 +317,21 @@ class SpecializedLab:
     lab_id: int = field(default_factory=lambda: auto_id.next_id("SpecializedLab"))
     phone_number: str = field(default_factory=random_phone)
     address: str = field(default_factory=random_address)
+    table_name: str = field(default="SpecializedLabs", init=False)
 
 
 @dataclass
 class Test:
     test_id: int = field(default_factory=lambda: auto_id.next_id("Test"))
     test_name: str = field(default_factory=business_slogan)
+    table_name: str = field(default="Tests", init=False)
 
 
 @dataclass
 class TestAccepted:
     test_id: int
     lab_id: int
+    table_name: str = field(default="TestsAccepted", init=False)
 
 
 def generate_test_accepted(lab: SpecializedLab, test: Test) -> TestAccepted:
@@ -344,6 +342,7 @@ def generate_test_accepted(lab: SpecializedLab, test: Test) -> TestAccepted:
 class Pharmacy:
     pharmacy_address: str = field(default_factory=random_address)
     pharmacy_name: str = field(default_factory=company)
+    table_name: str = field(default="Pharmacies", init=False)
 
 
 @dataclass
@@ -352,12 +351,14 @@ class Immunization:
         default_factory=lambda: auto_id.next_id("Immunization")
     )
     immunization_type: str = field(default_factory=random_immunization)
+    table_name: str = field(default="Immunizations", init=False)
 
 
 @dataclass
 class EmpImmunization:
     immunization_id: int
     emp_id: int
+    table_name: str = field(default="EmpImmunizations", init=False)
 
 
 def generate_emp_immunization(
@@ -372,6 +373,7 @@ def generate_emp_immunization(
 class ImmunizedBy:
     immunization_id: int
     patient_id: int
+    table_name: str = field(default="ImmunizedBys", init=False)
 
 
 def generate_immunized_by(immunization: Immunization, patient: Patient) -> ImmunizedBy:
@@ -388,6 +390,7 @@ class ReferrableDoctor:
     name: str = field(default_factory=random_name)
     specialization: str = field(default_factory=random_specialization)
     phone_number: str = field(default_factory=random_phone)
+    table_name: str = field(default="ReferrableDoctors", init=False)
 
 
 @dataclass
@@ -396,6 +399,7 @@ class Referral:
     ref_doctor_id: int
     patient_id: int
     ref_id: int = field(default_factory=lambda: auto_id.next_id("Referral"))
+    table_name: str = field(default="Referrals", init=False)
 
 
 def generate_referrel(
@@ -415,6 +419,7 @@ class CoveredBy:
     member_id: str = field(default_factory=random_member_id)
     group_number: str = field(default_factory=random_group)
     policy_holder_name: str = field(default_factory=random_name)
+    table_name: str = field(default="CoveredBys", init=False)
 
 
 def generate_covered_by(
@@ -436,6 +441,7 @@ class Relative:
     relative_id: int = field(default_factory=lambda: auto_id.next_id("Relative"))
     relative_type: str = field(default_factory=random_relative_type)
     additional_notes: Optional[str] = field(default_factory=random_notes, repr=False)
+    table_name: str = field(default="Relatives", init=False)
 
 
 def generate_relative(patient: Patient) -> CoveredBy:
@@ -446,6 +452,7 @@ def generate_relative(patient: Patient) -> CoveredBy:
 class RelativeCondition:
     relative_id: int
     icd_code: str
+    table_name: str = field(default="RelativeConditions", init=False)
 
 
 def generate_relative_condition(
@@ -474,6 +481,7 @@ class Prescription:
     prescription_date: str = field(
         default_factory=lambda: date_time_between(timedelta(weeks=(-60 * 12)))
     )
+    table_name: str = field(default="Prescriptions", init=False)
 
 
 def generate_prescription(
@@ -502,6 +510,7 @@ class Appointment:
         default_factory=lambda: round(fake.random.uniform(96.0, 106.0), 2)
     )
     notes: Optional[str] = field(default_factory=lambda: random_notes())
+    table_name: str = field(default="Appointments", init=False)
 
 
 def generate_appointment(patient: Patient) -> Appointment:
@@ -516,6 +525,7 @@ class LabReport:
     report_id: int = field(default_factory=lambda: auto_id.next_id("LabReport"))
     info: Optional[str] = field(default_factory=lambda: random_notes(80, 2))
     result_info: Optional[str] = field(default_factory=lambda: random_notes(80, 3))
+    table_name: str = field(default="LabReports", init=False)
 
 
 def generate_lab_report(
@@ -535,6 +545,7 @@ class Experiencing:
     app_id: int
     icd_code: str
     comment: Optional[str] = field(default_factory=lambda: random_notes(40, 2))
+    table_name: str = field(default="Experiencing", init=False)
 
 
 def generate_experiencing(
@@ -547,6 +558,7 @@ def generate_experiencing(
 class MedicalStaff:
     emp_id: int
     app_id: int
+    table_name: str = field(default="MedicalStaff", init=False)
 
 
 def generate_medical_staff(
@@ -562,6 +574,7 @@ class Diagnosis:
     app_id: int
     icd_code: str
     comment: Optional[str] = field(default_factory=lambda: random_notes(90, 3))
+    table_name: str = field(default="Diagnoses", init=False)
 
 
 def generate_diagnosis(
@@ -582,6 +595,7 @@ def generate_diagnosis(
 class ConductedBy:
     report_id: int
     lab_id: int
+    table_name: str = field(default="ConductedBys", init=False)
 
 
 def generate_conducted_by(
@@ -596,6 +610,7 @@ class Exam:
     app_id: int
     exam_id: int = field(default_factory=lambda: auto_id.next_id("Exam"))
     comment: Optional[str] = field(default_factory=lambda: random_notes(60, 2))
+    table_name: str = field(default="Exams", init=False)
 
 
 def generate_exam(report: LabReport, appointment: Appointment) -> Exam:
@@ -613,17 +628,20 @@ class CovidExam(ExamInterface):
     is_positive: bool = field(
         default_factory=lambda: fake.boolean(chance_of_getting_true=10)
     )
+    table_name: str = field(default="CovidExams", init=False)
 
 
 @dataclass
 class BloodExam(ExamInterface):
     blood_type: str = field(default_factory=random_blood_type)
     blood_sugar: int = field(default_factory=random_blood_sugar)
+    table_name: str = field(default="BloodExam", init=False)
 
 
 @dataclass
 class VaccineAdministration(ExamInterface):
     vaccine_type: str = field(default_factory=random_immunization)
+    table_name: str = field(default="VaccineAdministrations", init=False)
 
 
 @dataclass
@@ -916,10 +934,8 @@ class MockGenerator:
 
 def build_insert_statement(cls_array):
     first = cls_array[0]
-    attrs = get_attributes(
-        first, ["example_function", "columns", "row_values", "format_date"]
-    )
-    table_name = type(first).__name__
+    attrs = get_attributes(first, ["format_date", "table_name"])
+    table_name = first.table_name
     values = (get_attribute_values(cls, attrs) for cls in cls_array)
     return insert_into(
         column_names=attrs, table_name=table_name, values=map(str, values)
