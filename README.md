@@ -22,3 +22,11 @@ deactivate
 # run the following command before pushing to the repo!
 pip freeze > requirements.txt
 ```
+
+## Generating mock sql data
+
+run `python3 mock.py`
+
+navigate to `example.sql`
+
+use find and replace, find all `None` and replace with `DEFAULT`

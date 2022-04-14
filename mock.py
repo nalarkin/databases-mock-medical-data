@@ -1,27 +1,20 @@
 # pylint: skip-file
-from asyncore import write
 from collections import OrderedDict
 from dataclasses import dataclass, field
-from datetime import datetime
-from itertools import count
+from datetime import datetime, timedelta
 from pprint import pprint
 from string import ascii_uppercase
 from typing import List, Optional
 
 from faker import Faker
-from faker.providers import person
 
 from auto_increment import AutoIncrement
 from icd import MedicalCondition, read_conditions_from_file
 from insurance import InsuranceProvider, random_group, random_member_id
-from operator import attrgetter
-
 from main import insert_into
 
 fake = Faker()
 Faker.seed(0)
-Counter = count()
-
 auto_id = AutoIncrement()
 
 
@@ -70,8 +63,24 @@ def random_email() -> str:
     return fake.email()
 
 
-def date_between(start_date="-30y", end_date="today") -> datetime:
-    return fake.date_between(start_date=start_date, end_date=end_date)
+def format_date_no_time(date_time: datetime) -> str:
+    return str(date_time).split()[0]
+
+
+def format_date_with_time(date_time: datetime) -> str:
+    return str(date_time).split(".")[0]
+
+
+def date_time_between(
+    start_date=timedelta(days=-30), end_date=None, simple=True
+) -> str:
+    if end_date is None:
+        end_date = datetime.now()
+
+    date_time = fake.date_time_between(start_date=start_date, end_date=end_date)
+    if simple:
+        return format_date_no_time(date_time)
+    return format_date_with_time(date_time)
 
 
 def build_gender_dict():
@@ -233,8 +242,10 @@ def get_attribute_values(cls, attributes):
 class Patient:
     patient_id: int = field(default_factory=lambda: auto_id.next_id("Patient"))
     phone_number: str = field(default_factory=random_phone, repr=False)
-    birthday: datetime = field(
-        default_factory=lambda: date_between(start_date="-60y", end_date="-1y"),
+    birthday: str = field(
+        default_factory=lambda: date_time_between(
+            start_date=timedelta(weeks=(-60 * 12)), end_date=timedelta(weeks=(-1 * 12))
+        ),
         repr=False,
     )
     email: str = field(default_factory=random_email, repr=False)
@@ -251,16 +262,15 @@ class Patient:
     def row_values(self) -> str:
         return ""
 
-    def example_function(self):
-        return ""
-
 
 @dataclass
 class Employee:
     emp_id: int = field(default_factory=lambda: auto_id.next_id("Employee"))
     phone_number: str = field(default_factory=random_phone, repr=False)
-    birthday: datetime = field(
-        default_factory=lambda: date_between(start_date="-60y", end_date="-20y"),
+    birthday: str = field(
+        default_factory=lambda: date_time_between(
+            start_date=timedelta(weeks=(-60 * 12)), end_date=timedelta(weeks=(-20 * 12))
+        ),
         repr=False,
     )
     email: str = field(default_factory=random_email, repr=False)
@@ -461,7 +471,9 @@ class Prescription:
     instructions: Optional[str] = field(
         default_factory=lambda: random_notes(90, 5), repr=False
     )
-    prescription_date: datetime = field(default_factory=lambda: date_between("-7y"))
+    prescription_date: str = field(
+        default_factory=lambda: date_time_between(timedelta(weeks=(-60 * 12)))
+    )
 
 
 def generate_prescription(
@@ -597,7 +609,6 @@ class ExamInterface:
 
 @dataclass
 class CovidExam(ExamInterface):
-    # exam_id: int
     test_type: str = field(default_factory=random_covid_exam)
     is_positive: bool = field(
         default_factory=lambda: fake.boolean(chance_of_getting_true=10)
@@ -905,7 +916,9 @@ class MockGenerator:
 
 def build_insert_statement(cls_array):
     first = cls_array[0]
-    attrs = get_attributes(first, ["example_function", "columns", "row_values"])
+    attrs = get_attributes(
+        first, ["example_function", "columns", "row_values", "format_date"]
+    )
     table_name = type(first).__name__
     values = (get_attribute_values(cls, attrs) for cls in cls_array)
     return insert_into(
@@ -926,28 +939,23 @@ def build_all_insert_statements(cls_arrays):
 def write_insert_statement(statements: List[str]):
     with open("example.sql", "wt", encoding="utf-8") as f:
         for statement in statements:
-            print(statement, file=f, end="\n\n")
+            print(statement, file=f, end="\n")
+
+
+def convert_to_postgres(insert_statements: List[str]) -> List[str]:
+    res = []
+    for statement in insert_statements:
+        res.append(statement.replace("None", "DEFAULT"))
+    return res
 
 
 if __name__ == "__main__":
     config = MockGeneratorConfig(prescription_count=3)
     conditions = read_conditions_from_file()
     mock = MockGenerator(conditions, config)
-    pprint(mock.exams)
-    pprint(mock.blood_exams)
-    pprint(mock.covid_exams)
-    pprint(mock.vaccine_administered)
-
     patient_1 = mock.patients[0]
-    pprint(patient_1)
-    pprint(patient_1.columns)
-    # attrs = get_attributes(patient_1, ['example_function', 'columns', 'row_values'])
     tables_to_insert = get_attributes(mock, ["medical_conditions", "config"])
-    pprint(tables_to_insert)
     table_values_to_insert = get_attribute_values(mock, tables_to_insert)
-    pprint(table_values_to_insert)
-    write_insert_statement(build_all_insert_statements(table_values_to_insert))
-    # pprint(tables_to_insert)
-    # pprint(attrs)
-    # pprint(get_attribute_values(patient_1, attrs))
-    # pprint(build_insert_statement(mock.patients))
+    insert_statements = build_all_insert_statements(table_values_to_insert)
+    postgres_statements = convert_to_postgres(insert_statements)
+    write_insert_statement(postgres_statements)
