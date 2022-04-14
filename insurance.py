@@ -37,9 +37,9 @@ def increment_id():
 class InsuranceProvider:
     provider_id: int = field(default_factory=increment_id)
     insurance_name: str = field(default_factory=random_company_name)
-    my_policy_number: str = field(default_factory=random_policy_number)
+    policy_number: str = field(default_factory=random_policy_number)
     is_in_network: bool = field(default_factory=random_in_network)
-    table_name: str = field(default="InsuranceProviders", init=False)
+    table_name: str = field(default="insurance_providers", init=False)
 
 
 if __name__ == "__main__":

@@ -305,7 +305,7 @@ class ArchivedFile:
     file_name: str = field(default_factory=random_file)
     # TODO: Do we want to use mock blobs?
     file_blob: str = field(default=None)
-    table_name: str = field(default="ArchivedFiles", init=False)
+    table_name: str = field(default="archived_files", init=False)
 
 
 def generate_archived_file(patient: Patient, employee: Employee) -> ArchivedFile:
@@ -317,7 +317,7 @@ class SpecializedLab:
     lab_id: int = field(default_factory=lambda: auto_id.next_id("SpecializedLab"))
     phone_number: str = field(default_factory=random_phone)
     address: str = field(default_factory=random_address)
-    table_name: str = field(default="specializedLabs", init=False)
+    table_name: str = field(default="specialized_labs", init=False)
 
 
 @dataclass
@@ -661,11 +661,11 @@ class MockGeneratorConfig:
     referrable_doctor_count: int = field(default=5)
 
     # all schema below are dependent schema
-    covered_by_count: int = field(default=5)
+    insurance_cover_count: int = field(default=5)
     relative_count: int = field(default=5)
     prescription_count: int = field(default=5)
-    immunized_by_count: int = field(default=5)
-    emp_immunization_count: int = field(default=5)
+    immunized_patient_count: int = field(default=5)
+    immunized_employee_count: int = field(default=5)
     referral_count: int = field(default=5)
     appointment_count: int = field(default=5)
 
@@ -675,10 +675,10 @@ class MockGeneratorConfig:
     archived_file_count: int = field(default=5)
 
     # M-N relationships, total participation
-    medical_staff_count_max: int = field(default=3)
-    test_accepted_count_max: int = field(default=3)
+    appointment_employee_count_max: int = field(default=3)
+    accepted_test_count_max: int = field(default=3)
     diagnosis_count_max: int = field(default=2)
-    experiencing_count_max: int = field(default=2)
+    appointment_medical_conditions_count_max: int = field(default=2)
     relative_condition_max: int = field(default=2)
 
 
@@ -698,16 +698,18 @@ class MockGenerator:
 
     # all schema below are dependent schema
     appointments: List[Appointment] = field(init=False, default_factory=list)
-    covered_bys: List[InsuranceCover] = field(init=False, default_factory=list)
+    insurance_covers: List[InsuranceCover] = field(init=False, default_factory=list)
     relatives: List[Relative] = field(init=False, default_factory=list)
     prescriptions: List[Prescription] = field(init=False, default_factory=list)
-    immunized_bys: List[ImmunizedPatient] = field(init=False, default_factory=list)
-    emp_immunizations: List[ImmunizedEmployee] = field(init=False, default_factory=list)
+    immunized_patients: List[ImmunizedPatient] = field(init=False, default_factory=list)
+    immunized_employees: List[ImmunizedEmployee] = field(
+        init=False, default_factory=list
+    )
     referrals: List[Referral] = field(init=False, default_factory=list)
-    conducted_bys: List[ReportCreator] = field(init=False, default_factory=list)
+    report_creators: List[ReportCreator] = field(init=False, default_factory=list)
     blood_exams: List[BloodExam] = field(init=False, default_factory=list)
     covid_exams: List[CovidExam] = field(init=False, default_factory=list)
-    vaccine_administered: List[AdministeredVaccine] = field(
+    administered_vaccines: List[AdministeredVaccine] = field(
         init=False, default_factory=list
     )
 
@@ -717,10 +719,12 @@ class MockGenerator:
     archived_files: List[ArchivedFile] = field(init=False, default_factory=list)
 
     # M-N relationships, total participation
-    medical_staff: List[AppointmentEmployee] = field(init=False, default_factory=list)
-    tests_accepted: List[AcceptedTest] = field(init=False, default_factory=list)
-    diagnosis: List[Diagnosis] = field(init=False, default_factory=list)
-    experiencing: List[AppointmentMedicalCondition] = field(
+    appointment_employees: List[AppointmentEmployee] = field(
+        init=False, default_factory=list
+    )
+    accepted_tests: List[AcceptedTest] = field(init=False, default_factory=list)
+    diagnoses: List[Diagnosis] = field(init=False, default_factory=list)
+    appointment_medical_conditions: List[AppointmentMedicalCondition] = field(
         init=False, default_factory=list
     )
     relative_conditions: List[RelativeCondition] = field(
@@ -772,8 +776,8 @@ class MockGenerator:
 
     def _generate_covered_bys(self):
         # TODO: Ensure there are no duplicates in this table, can possibly make covered by frozen, and use set
-        quantity = self.config.covered_by_count
-        self.covered_bys = [
+        quantity = self.config.insurance_cover_count
+        self.insurance_covers = [
             generate_insurance_covers(patient, provider)
             for patient, provider in self._random_selector(
                 self.patients, self.insurance_providers, quantity=quantity
@@ -803,20 +807,20 @@ class MockGenerator:
         )
 
     def _generate_immunizations(self):
-        self.immunized_bys = [
+        self.immunized_patients = [
             generate_immunized_patients(immunization, patient)
             for immunization, patient in self._random_selector(
                 self.immunizations,
                 self.patients,
-                quantity=self.config.immunized_by_count,
+                quantity=self.config.immunized_patient_count,
             )
         ]
-        self.emp_immunizations = [
+        self.immunized_employees = [
             generate_immunized_employees(immunization, employee)
             for immunization, employee in self._random_selector(
                 self.immunizations,
                 self.employees,
-                quantity=self.config.immunized_by_count,
+                quantity=self.config.immunized_patient_count,
             )
         ]
 
@@ -843,35 +847,39 @@ class MockGenerator:
         """Every appointment must have at least 1 medical staff"""
         medical_staff = []
         for app in self.appointments:
-            random_length = fake.random.randint(1, self.config.medical_staff_count_max)
+            random_length = fake.random.randint(
+                1, self.config.appointment_employee_count_max
+            )
             for employee in fake.random_elements(
                 elements=self.employees, unique=True, length=random_length
             ):
                 medical_staff.append(generate_appointment_employees(employee, app))
-        self.medical_staff = medical_staff
+        self.appointment_employees = medical_staff
 
     def _generate_tests_accepted(self):
         """Every appointment must have at least 1 medical staff"""
         tests_accepted = []
         for lab in self.specialized_labs:
-            random_length = fake.random.randint(1, self.config.test_accepted_count_max)
+            random_length = fake.random.randint(1, self.config.accepted_test_count_max)
             for test in fake.random_elements(
                 elements=self.tests, unique=True, length=random_length
             ):
                 tests_accepted.append(generate_test_accepted(lab, test))
-        self.tests_accepted = tests_accepted
+        self.accepted_tests = tests_accepted
 
     def _generate_experiencing(self):
         experiencing = []
         for app in self.appointments:
-            random_length = fake.random.randint(1, self.config.experiencing_count_max)
+            random_length = fake.random.randint(
+                1, self.config.appointment_medical_conditions_count_max
+            )
             for condition in fake.random_elements(
                 elements=self.medical_conditions, unique=True, length=random_length
             ):
                 experiencing.append(
                     generate_appointment_medical_conditions(app, condition)
                 )
-        self.experiencing = experiencing
+        self.appointment_medical_conditions = experiencing
 
     def _generate_relative_conditions(self):
         relative_conditions = []
@@ -898,7 +906,7 @@ class MockGenerator:
                         random_employee, app, Patient(app.patient_id), condition
                     )
                 )
-        self.diagnosis = diagnosis
+        self.diagnoses = diagnosis
 
     def _generate_lab_reports(self):
         self.lab_reports = [
@@ -912,7 +920,7 @@ class MockGenerator:
         ]
 
     def _generate_conducted_bys(self):
-        self.conducted_bys = [
+        self.report_creators = [
             generate_report_creator(report, lab)
             for report, lab in zip(
                 self.lab_reports,
@@ -931,7 +939,7 @@ class MockGenerator:
         ]
 
     def _generate_exam_subclasses(self):
-        arrays = [self.blood_exams, self.covid_exams, self.vaccine_administered]
+        arrays = [self.blood_exams, self.covid_exams, self.administered_vaccines]
         exam_types: List[ExamInterface] = [BloodExam, CovidExam, AdministeredVaccine]
         for exam in self.exams:
             random_selection_idx = fake.random.randint(0, len(exam_types) - 1)
