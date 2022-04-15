@@ -86,15 +86,6 @@ def read_categories_from_file(
         return code_list
 
 
-# def write_categories_to_file(code_data: List[Code]):
-#     # TODO: Instead of reading categories from icd_code.csv, read it from icd_categories.csv
-#     category_input = set((code.category_code, code.category) for code in code_data)
-#     table_name = "category"
-#     columns = ["category_code", "category_name"]
-#     with open("insert_categories.sql", "wt", encoding="utf-8") as f:
-#         print(insert_into(table_name, columns, map(str, iter(category_input))), file=f)
-
-
 def write_conditions_to_file(code_data: List[MedicalCondition]):
     columns = code_data[0].columns
     table_name = code_data[0].table_name
@@ -118,15 +109,26 @@ def remove_duplicates(codes: List[MedicalCondition], seen_set: Optional[Set] = N
     return res
 
 
-def read_combined_conditions() -> List[MedicalCondition]:
-    codes = read_conditions_from_file(filename="icd_codes_selected.csv")
-    codes.extend(read_categories_from_file(filename="icd_categories_selected.csv"))
+def read_combined_conditions(
+    category_file_name: Optional[str] = None,
+    condition_file_name: Optional[str] = None,
+) -> List[MedicalCondition]:
+    if category_file_name is None:
+        category_file_name = "icd_categories_selected.csv"
+    if condition_file_name is None:
+        condition_file_name = "icd_codes_selected.csv"
+    codes = read_conditions_from_file(filename=condition_file_name)
+    codes.extend(read_categories_from_file(filename=category_file_name))
     return remove_duplicates(codes)
 
 
 if __name__ == "__main__":
-    uniques = read_combined_conditions()
-    print(len(uniques))
+    uniques = read_combined_conditions("icd_categories.csv", "icd_codes.csv")
+    longest_name = ""
+    for code in uniques:
+        longest_name = max(longest_name, code.name, key=len)
+    print(longest_name)
+    print(len(longest_name))
     # uniques.sort()
     # write_conditions_to_file(uniques)
     # TODO: Instead of reading categories from icd_code.csv, read it from icd_categories.csv

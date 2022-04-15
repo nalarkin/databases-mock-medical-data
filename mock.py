@@ -222,7 +222,7 @@ def random_blood_type():
 
 
 def random_blood_sugar():
-    return fake.random.randint(70, 120)
+    return round(fake.random.uniform(70.0, 120.0), 2)
 
 
 def random_member_id() -> str:
@@ -673,7 +673,7 @@ class CovidExam(ExamInterface):
 @dataclass
 class BloodExam(ExamInterface):
     blood_type: str = field(default_factory=random_blood_type)
-    blood_sugar: int = field(default_factory=random_blood_sugar)
+    blood_sugar: float = field(default_factory=random_blood_sugar)
     table_name: str = field(default="blood_exams", init=False)
 
 
@@ -1028,8 +1028,9 @@ def convert_to_postgres(insert_statements: List[str]) -> List[str]:
     return res
 
 
-def generate_mock_data_and_write_to_file():
-    config = MockGeneratorConfig(prescription_count=3)
+def generate_mock_data_and_write_to_file(config: Optional[MockGeneratorConfig] = None):
+    if config is None:
+        config = MockGeneratorConfig(prescription_count=3)
     conditions = read_combined_conditions()
     mock = MockGenerator(conditions, config)
     tables_to_insert = get_attributes(mock, ["medical_conditions", "config"])
