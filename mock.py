@@ -9,8 +9,8 @@ import re
 from faker import Faker
 
 from auto_increment import AutoIncrement
-from icd import MedicalCondition, read_conditions_from_file
-from main import insert_into
+from icd import MedicalCondition, read_combined_conditions, read_conditions_from_file
+from reader import insert_into
 
 fake = Faker()
 Faker.seed(0)
@@ -1030,7 +1030,7 @@ def convert_to_postgres(insert_statements: List[str]) -> List[str]:
 
 def generate_mock_data_and_write_to_file():
     config = MockGeneratorConfig(prescription_count=3)
-    conditions = read_conditions_from_file(max_size=3)
+    conditions = read_combined_conditions()
     mock = MockGenerator(conditions, config)
     tables_to_insert = get_attributes(mock, ["medical_conditions", "config"])
     table_values_to_insert = get_attribute_values(mock, tables_to_insert)

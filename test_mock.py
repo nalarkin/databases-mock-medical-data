@@ -5,7 +5,9 @@ from faker import Faker
 from icd import MedicalCondition
 from mock import MockGeneratorConfig, MockGenerator
 
-mock_conditions = [MedicalCondition(f"{i}", f"A{i}", f"Test{i}") for i in range(5)]
+mock_conditions = [MedicalCondition(f"{i}" * 3, f"A{i}") for i in range(5)] + [
+    MedicalCondition(f"{i}" * 4, f"B{i}") for i in range(5)
+]
 
 
 class MockGeneratorTest(unittest.TestCase):
