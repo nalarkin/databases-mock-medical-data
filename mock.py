@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from string import ascii_uppercase
 from typing import List, Optional
+import re
 
 from faker import Faker
 
@@ -506,7 +507,9 @@ class Prescription:
         default_factory=lambda: random_notes(90, 5), repr=False
     )
     prescription_date: str = field(
-        default_factory=lambda: date_time_between(timedelta(weeks=(-60 * 12)))
+        default_factory=lambda: date_time_between(
+            timedelta(weeks=(-60 * 12)), simple=False
+        )
     )
     table_name: str = field(default="prescriptions", init=False)
 
@@ -537,6 +540,13 @@ class Appointment:
         default_factory=lambda: round(fake.random.uniform(96.0, 106.0), 2)
     )
     notes: Optional[str] = field(default_factory=lambda: random_notes())
+    date: str = field(
+        default_factory=lambda: date_time_between(
+            start_date=timedelta(weeks=(-7 * 12)),
+            end_date=timedelta(weeks=(-1)),
+            simple=False,
+        )
+    )
     table_name: str = field(default="appointments", init=False)
 
 
@@ -999,10 +1009,22 @@ def write_insert_statement(statements: List[str]):
             print(statement, file=f, end="\n")
 
 
+# matches strings which contain a date that has specified time
+# example: matches: '2010-11-12 04:26:21' but not '2010-11-12'.
+timestamp_re = re.compile(r"'[1-2][\d]{3}-[\d]{2}-[\d]{2} [\d]{2}:[\d]{2}:[\d]{2}'")
+
+
+def add_timestamp_keyword(statement: str) -> str:
+    def add_timestamp(matchobj: re.Match) -> str:
+        return f"TIMESTAMP {matchobj.group(0)}"
+
+    return timestamp_re.sub(add_timestamp, statement)
+
+
 def convert_to_postgres(insert_statements: List[str]) -> List[str]:
     res = []
     for statement in insert_statements:
-        res.append(statement.replace("None", "DEFAULT"))
+        res.append(add_timestamp_keyword(statement.replace("None", "DEFAULT")))
     return res
 
 

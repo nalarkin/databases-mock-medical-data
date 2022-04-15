@@ -1,66 +1,69 @@
 /* INSERT DATA INTO `accepted_tests` TABLE */
 INSERT INTO accepted_tests (lab_id, test_id) VALUES
-(1, 2),
-(1, 3),
+(1, 1),
+(2, 3),
 (2, 2),
-(2, 5),
-(3, 3),
 (3, 1),
-(4, 2),
-(5, 4);
+(3, 3),
+(4, 1),
+(5, 3);
+/* INSERT DATA INTO `administered_vaccines` TABLE */
+INSERT INTO administered_vaccines (exam_id, vaccine_type) VALUES
+(1, 'Hepatitis B'),
+(3, 'Tuberculosis');
 /* INSERT DATA INTO `appointment_employees` TABLE */
 INSERT INTO appointment_employees (app_id, emp_id) VALUES
-(1, 2),
-(1, 1),
+(1, 3),
 (1, 4),
+(1, 1),
+(2, 2),
 (2, 3),
-(2, 5),
 (2, 1),
-(3, 2),
-(4, 1),
-(4, 4),
+(3, 1),
+(3, 4),
 (4, 5),
-(5, 1),
-(5, 3);
+(4, 3),
+(5, 3),
+(5, 4),
+(5, 2);
 /* INSERT DATA INTO `appointment_medical_conditions` TABLE */
 INSERT INTO appointment_medical_conditions (app_id, comment, icd_code) VALUES
-(1, DEFAULT, 'A009'),
-(2, DEFAULT, 'A009'),
-(3, DEFAULT, 'A000'),
-(3, 'Company enter son foreign remember site military.', 'A001'),
-(4, DEFAULT, 'A000'),
-(4, 'One political almost serious stand author possible lead.', 'A001'),
+(1, DEFAULT, 'A000'),
+(2, DEFAULT, 'A001'),
+(3, 'So teach energy possible believe step. Grow better why child might source.', 'A001'),
+(3, 'Front war receive civil single city.', 'A000'),
+(4, DEFAULT, 'A009'),
 (5, DEFAULT, 'A001');
 /* INSERT DATA INTO `appointments` TABLE */
-INSERT INTO appointments (app_id, blood_pressure, height, notes, patient_id, room_number, temperature, weight) VALUES
-(1, '112/61', 55.7, DEFAULT, 4, 10, 96.8, 242.26),
-(2, '104/72', 71.87, DEFAULT, 4, 11, 99.01, 152.92),
-(3, '112/90', 71.37, DEFAULT, 1, 12, 96.45, 183.5),
-(4, '81/89', 63.15, 'Key beat drop step child this degree. Baby interview senior stop always Congress majority campaign. Various floor itself news experience.', 2, 2, 105.17, 233.45),
-(5, '105/78', 65.42, DEFAULT, 3, 17, 100.62, 326.56);
+INSERT INTO appointments (app_id, blood_pressure, date, height, notes, patient_id, room_number, temperature, weight) VALUES
+(1, '112/61', TIMESTAMP '2021-05-30 09:29:58', 55.7, DEFAULT, 4, 10, 96.8, 242.26),
+(2, '105/76', TIMESTAMP '2021-08-11 16:31:24', 72.07, 'Gas Republican and various authority leave right. True include management.', 4, 6, 99.12, 291.98),
+(3, '90/65', TIMESTAMP '2020-09-16 16:58:33', 74.79, 'Baby interview senior stop always Congress majority campaign. Various floor itself news experience. Smile represent since method left plant evening.', 1, 3, 97.54, 149.58),
+(4, '158/66', TIMESTAMP '2022-01-29 04:31:38', 62.44, DEFAULT, 2, 3, 98.18, 126.95),
+(5, '148/92', TIMESTAMP '2021-09-30 23:23:06', 51.49, 'Grow push region produce develop story drive. Film force health lose old case administration.', 3, 0, 99.85, 211.33);
 /* INSERT DATA INTO `archived_files` TABLE */
 INSERT INTO archived_files (emp_id, file_blob, file_id, file_name, patient_id) VALUES
-(1, DEFAULT, 1, 'up.txt', 5),
-(2, DEFAULT, 2, 'make.wav', 4),
-(4, DEFAULT, 3, 'card.pages', 4),
-(2, DEFAULT, 4, 'generation.mov', 1),
-(4, DEFAULT, 5, 'matter.mp3', 1);
+(2, DEFAULT, 1, 'free.flac', 5),
+(3, DEFAULT, 2, 'similar.flac', 2),
+(5, DEFAULT, 3, 'green.bmp', 5),
+(3, DEFAULT, 4, 'another.avi', 1),
+(5, DEFAULT, 5, 'assume.txt', 3);
 /* INSERT DATA INTO `blood_exams` TABLE */
 INSERT INTO blood_exams (blood_sugar, blood_type, exam_id) VALUES
-(82, 'B+', 1),
-(72, 'B-', 3);
+(94, 'O-', 4),
+(75, 'O+', 5);
 /* INSERT DATA INTO `covid_exams` TABLE */
 INSERT INTO covid_exams (exam_id, is_positive, test_type) VALUES
-(2, True, 'PCR'),
-(4, False, 'PCR'),
-(5, False, 'Antigen');
+(2, False, 'Antigen');
 /* INSERT DATA INTO `diagnoses` TABLE */
 INSERT INTO diagnoses (app_id, comment, emp_id, icd_code, patient_id) VALUES
-(2, 'Pattern president add lead network the. Live teach movie I situation understand agree.', 3, 'A009', 4),
-(2, 'Difficult there leg theory case north. Class on reach.', 3, 'A001', 4),
-(3, 'Structure your those head. Page single theory. American focus something who blood. Certain hotel should.', 2, 'A000', 1),
-(3, 'Huge away represent race sing nation network. Check clearly ahead career. Ground think save respond friend budget while.', 2, 'A009', 1),
-(4, 'Recent project speech director city necessary thus sister. Tv collection still support these military part. Just raise enough onto try.', 3, 'A000', 2);
+(1, 'Early high trouble drive loss turn. Structure your those head. Page single theory.', 4, 'A001', 4),
+(2, 'Fast play fact issue radio especially. Get car party close issue. Less politics religious back international risk. College debate direction moment.', 1, 'A009', 4),
+(3, 'Once effect main simply two no. Sister meet though ago. These military part decade.', 3, 'A009', 1),
+(4, 'Growth behind probably arm. Only cup almost identify.', 4, 'A001', 2),
+(4, 'Grow husband short year term. Tough building child usually sea upon full. Body himself home message woman.', 4, 'A000', 2),
+(5, 'Job high she. West agreement girl happen front law care military. War resource evening realize per.', 5, 'A000', 3),
+(5, 'Feel military pull watch choice. Free perform civil.', 5, 'A001', 3);
 /* INSERT DATA INTO `employees` TABLE */
 INSERT INTO employees (address, birthday, dea_number, email, emp_id, gender, medical_license_number, name, phone_number, role, salary, ssn) VALUES
 ('027 Jonathon Estate Suite 878\nNorth Troyport, NH 07035', '2012-04-13', 'MG0300891', 'rgray@example.net', 1, 'Male', 'GP2066', 'Sheri Burnett', '(466)109-3523', 'Physician General Practitioner', 255099, '896-54-0517'),
@@ -70,11 +73,11 @@ INSERT INTO employees (address, birthday, dea_number, email, emp_id, gender, med
 ('Unit 8688 Box 0918\nDPO AP 10509', '2013-08-06', 'BK0024894', 'blakeshane@example.org', 5, 'Female', 'PA7699', 'Susan Harris', '+1-269-471-1801x320', 'Physician Assistant', 121383, '820-20-7549');
 /* INSERT DATA INTO `exams` TABLE */
 INSERT INTO exams (app_id, comment, exam_id, report_id) VALUES
-(4, 'Matter nice really listen meeting language condition. Fund indicate help north friend state do.', 1, 1),
-(4, 'Simple improve language thousand need when simple. Involve education little direction exist.', 2, 5),
-(2, DEFAULT, 3, 4),
-(3, DEFAULT, 4, 2),
-(4, DEFAULT, 5, 4);
+(2, DEFAULT, 1, 3),
+(3, 'First natural without any remain support.', 2, 1),
+(4, DEFAULT, 3, 5),
+(1, DEFAULT, 4, 5),
+(5, 'Argue home exactly different week treat mouth threat.', 5, 1);
 /* INSERT DATA INTO `immunizations` TABLE */
 INSERT INTO immunizations (immunization_id, immunization_type) VALUES
 (1, 'Mumps'),
@@ -84,25 +87,25 @@ INSERT INTO immunizations (immunization_id, immunization_type) VALUES
 (5, 'Tuberculosis');
 /* INSERT DATA INTO `immunized_employees` TABLE */
 INSERT INTO immunized_employees (emp_id, immunization_id) VALUES
-(4, 5),
-(2, 4),
-(5, 4),
-(2, 4),
-(5, 3);
+(1, 4),
+(5, 2),
+(3, 2),
+(1, 5),
+(3, 5);
 /* INSERT DATA INTO `immunized_patients` TABLE */
 INSERT INTO immunized_patients (immunization_id, patient_id) VALUES
-(3, 4),
-(2, 5),
-(5, 2),
-(3, 1),
-(3, 3);
+(4, 1),
+(4, 3),
+(5, 5),
+(2, 2),
+(3, 2);
 /* INSERT DATA INTO `insurance_covers` TABLE */
 INSERT INTO insurance_covers (group_number, member_id, patient_id, policy_holder_name, provider_id) VALUES
-('843318', 'LHV886016419', 2, 'Amanda Zavala', 4),
-('590262', 'RQK535749220', 2, 'Amanda Zavala', 2),
-('599271', 'HYM812379332', 1, 'Thomas Moon', 2),
-('778514', 'RUF089577403', 4, 'John Carlson', 4),
-('357345', 'KXX963546030', 1, 'Thomas Moon', 4);
+('957740', 'TAQ236599271', 2, 'Randall Costa II', 5),
+('354603', 'TMW827785142', 3, 'Savannah Robinson', 3),
+('802507', 'ALS535734524', 1, 'Thomas Moon', 1),
+('237625', 'LVN003003510', 1, 'Thomas Moon', 4),
+('709166', 'ZXV256606488', 2, 'Amanda Zavala', 4);
 /* INSERT DATA INTO `insurance_providers` TABLE */
 INSERT INTO insurance_providers (insurance_name, is_in_network, policy_number, provider_id) VALUES
 ('Snyder LLC', True, '46660', 1),
@@ -112,11 +115,11 @@ INSERT INTO insurance_providers (insurance_name, is_in_network, policy_number, p
 ('Soto Inc', True, '85367', 5);
 /* INSERT DATA INTO `lab_reports` TABLE */
 INSERT INTO lab_reports (app_id, file_id, icd_code, info, report_id, result_info) VALUES
-(2, 5, 'A001', 'Few participant true lead. Long not improve begin.', 1, 'Father growth behind probably. Statement carry next according.'),
-(3, 3, 'A009', 'Make real use nice themselves gas best above. Marriage worker ever across great.', 2, 'Back off difficult happen. Team certainly explain current simply process. Executive partner story budget great than.'),
-(3, 4, 'A009', 'Trouble it grow husband short year term look. Building child usually sea upon.', 3, 'Body himself home message woman. Stock determine human find discussion military ability. First through dinner whose worker offer American.'),
-(3, 3, 'A000', 'Rise condition Congress recognize agreement.', 4, 'Movement can start paper tree bank.'),
-(1, 1, 'A001', 'Minute perform indeed.', 5, 'Dinner indeed listen a decision. Past especially old.');
+(1, 5, 'A009', 'Charge read management production up our. Drug toward such.', 1, 'Analysis care kitchen. Difference range technology serious international position write those.'),
+(5, 1, 'A001', 'Clear newspaper ground just keep. Suffer life chair senior seem west.', 2, 'Decide happy another image because include now. Must plant whether protect most trade. Herself Mr bad wide manage.'),
+(4, 2, 'A000', 'Pay growth base age speak pass.', 3, 'Happen letter body language there wonder him. Until direction opportunity very analysis firm once. As year look floor role agency its. Seven those budget involve.'),
+(2, 3, 'A001', 'Enough break factor pattern PM. My full need claim many against television.', 4, 'Yet between night western serious edge. Minute technology only magazine.'),
+(4, 3, 'A000', 'Best student describe concern professional discover.', 5, 'Give especially win give yourself system. Letter finish campaign night simply. Bar standard final. Along particularly factor boy Republican without.');
 /* INSERT DATA INTO `patients` TABLE */
 INSERT INTO patients (address, birthday, email, gender, name, patient_id, phone_number, ssn) VALUES
 ('578 Michael Island\nNew Thomas, NC 34644', '2010-11-12', 'montgomeryjohn@example.net', 'Male', 'Thomas Moon', 1, '(604)876-4759x3824', '723-78-2408'),
@@ -133,9 +136,9 @@ INSERT INTO pharmacies (pharmacy_address, pharmacy_name) VALUES
 ('77857 Scott Divide Suite 093\nWest Thomastown, NC 09211', 'Camacho, Parks and Harmon');
 /* INSERT DATA INTO `prescriptions` TABLE */
 INSERT INTO prescriptions (drug_name, emp_id, instructions, patient_id, pharmacy_address, prescription_date, prescription_id, quantity, refills) VALUES
-('Park, Hickman and Cooley', 3, 'Break word source wall drug. Race government trouble tonight former section across. North weight guy. Fall manager idea issue color small notice kind.', 4, '8644 Watson Road\nEast David, MS 53089', '2014-04-17', 1, 54, 5),
-('Fry Group', 3, DEFAULT, 1, '101 Torres Junctions\nNew Micheleburgh, MT 38471', '2018-11-25', 2, 171, 4),
-('Jones Group', 1, 'Probably church body mean. Painting senior entire expect investment yard responsibility. Mrs never wrong couple site. Suddenly seek choice produce.', 4, '8644 Watson Road\nEast David, MS 53089', '2021-10-13', 3, 72, 2);
+('Kramer PLC', 2, 'We lose water. Section could nature interest wear. Morning as police often. Place myself his itself find add sing. Watch Mrs never wrong couple.', 4, '77857 Scott Divide Suite 093\nWest Thomastown, NC 09211', TIMESTAMP '2021-10-19 16:38:56', 1, 12, 7),
+('Moody-Kirk', 4, 'Guess we no in pass sound. Tonight gun word citizen create. Physical market room eat through ever. Back large season last meeting southern. When clearly type up. Wait education think similar particular before.', 4, '101 Torres Junctions\nNew Micheleburgh, MT 38471', TIMESTAMP '2008-12-31 02:15:53', 2, 131, 2),
+('Smith-King', 2, 'Recent state old great notice north. Foreign agency list miss among. Ten guess attorney response provide likely fire. Fire town worker. Image central challenge term memory. By care lose politics. Role mind statement.', 5, '77857 Scott Divide Suite 093\nWest Thomastown, NC 09211', TIMESTAMP '2020-03-30 17:48:27', 3, 102, 6);
 /* INSERT DATA INTO `referrable_doctors` TABLE */
 INSERT INTO referrable_doctors (name, phone_number, ref_doctor_id, specialization) VALUES
 ('Aaron Nelson', '001-329-431-6756x2566', 1, 'Hepatobiliary'),
@@ -145,34 +148,33 @@ INSERT INTO referrable_doctors (name, phone_number, ref_doctor_id, specializatio
 ('Gregory Roberts', '(163)968-3735', 5, 'Allergy');
 /* INSERT DATA INTO `referrals` TABLE */
 INSERT INTO referrals (emp_id, patient_id, ref_doctor_id, ref_id) VALUES
-(5, 5, 3, 1),
-(1, 5, 5, 2),
-(3, 4, 4, 3),
-(4, 5, 5, 4),
-(3, 2, 1, 5);
+(4, 2, 4, 1),
+(1, 4, 3, 2),
+(4, 3, 2, 3),
+(5, 3, 3, 4),
+(1, 3, 1, 5);
 /* INSERT DATA INTO `relative_conditions` TABLE */
 INSERT INTO relative_conditions (icd_code, relative_id) VALUES
+('A000', 1),
 ('A009', 1),
 ('A009', 2),
-('A000', 2),
-('A009', 3),
+('A001', 3),
 ('A000', 3),
-('A009', 4),
-('A000', 5),
-('A009', 5);
+('A001', 4),
+('A000', 5);
 /* INSERT DATA INTO `relatives` TABLE */
 INSERT INTO relatives (additional_notes, patient_id, relative_id, relative_type) VALUES
-('Physical agency and difficult president at artist.', 4, 1, 'mother'),
-('Itself group computer forget would section him. Through move source wonder relate service.', 2, 2, 'aunt'),
-('Commercial may perform product style record. Form style star east. What to sea.', 2, 3, 'great-grandfather'),
-('Until our per leader change own. Future scene heavy personal threat.', 3, 4, 'great-grandmother'),
-('Public leader medical class send. Establish manage hotel financial too nearly. Significant now energy.', 4, 5, 'uncle');
+('Style star east against southern. Sea stuff no response. Until our per leader change own.', 1, 1, 'mother'),
+('Personal threat many. Fall character door green save identify. Sound war address morning explain.', 3, 2, 'grandmother'),
+('Need various although house build get anything. Science alone quite old simply. Yet seven several might history.', 4, 3, 'uncle'),
+('Word source wall drug purpose mouth then. Trouble tonight former section.', 4, 4, 'grandmother'),
+(DEFAULT, 5, 5, 'sister');
 /* INSERT DATA INTO `report_creators` TABLE */
 INSERT INTO report_creators (lab_id, report_id) VALUES
-(4, 1),
-(5, 2),
-(4, 3),
-(4, 4),
+(3, 1),
+(2, 2),
+(3, 3),
+(3, 4),
 (3, 5);
 /* INSERT DATA INTO `specialized_labs` TABLE */
 INSERT INTO specialized_labs (address, lab_id, phone_number) VALUES
