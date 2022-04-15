@@ -6,3 +6,5 @@ __pycache__
 !icd_categories.csv
 !icd_codes.csv
 # !example.sql
+!icd_categories_selected.csv
+!icd_codes_selected.csv

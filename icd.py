@@ -1,54 +1,44 @@
 import csv
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import math
-from pprint import pprint
-from typing import List
+from typing import List, Optional, Set
 
-
-@dataclass
-class MedicalCondition:
-    category_code: str
-    icd_code: str
-    name: str
-
-
-@dataclass
-class MedicalConditionCategory:
-    category_code: str
-    category_name: str
-
-
-@dataclass
-class MedicalConditionSubcategory:
-    subcategory_code: str
-    subcategory_name: str
-
-
-# @dataclass
-# class Code:
-#     category_code: str
-#     variant: int
-#     complete_code: str
-#     name: str
-#     name_duplicate: str
-#     category: str
-
-#     @property
-#     def insert(self):
-#         attributes = (self.complete_code, self.category_code, self.name)
-#         # return f"({', '.join(attributes)})"
-#         return attributes
+from reader import insert_into
 
 
 CATEGORY_CODE, VARIANT, COMPLETE_CODE, NAME, *_ = 0, 1, 2, 3, 4, 5
 
 
-def is_category(word: str) -> bool:
-    return len(word) == 4
+@dataclass(order=True)
+class MedicalCondition:
+    icd_code: str
+    name: str = field(compare=False)
+    parent_code: Optional[str] = field(default=None, init=False, compare=False)
+    table_name: str = field(default="medical_conditions", init=False, compare=False)
+
+    def __post_init__(self):
+        if len(self.icd_code) < 3:
+            raise ValueError(
+                f"ICD code must be at least 3 characters; '{self.icd_code}' less than 3 characters"
+            )
+        if len(self.icd_code) == 3:
+            return None
+        self.parent_code = self.icd_code[: len(self.icd_code) - 1]
+
+    @property
+    def columns(self):
+        return ("icd_code", "name", "parent_code")
+
+    @property
+    def insert(self):
+        return (self.icd_code, self.name, self.parent_code)
 
 
-def read_conditions_from_file(max_size: float = math.inf) -> List[MedicalCondition]:
-    filename = "icd_codes.csv"
+def read_conditions_from_file(
+    filename: Optional[str] = "icd_codes.csv",
+    max_size: float = math.inf,
+    letter_prefix: Optional[str] = None,
+) -> List[MedicalCondition]:
     with open(filename, mode="rt", encoding="utf-8", newline="\n") as csv_file:
         code_reader = csv.reader(
             csv_file,
@@ -58,9 +48,10 @@ def read_conditions_from_file(max_size: float = math.inf) -> List[MedicalConditi
             if line_number > max_size:
                 break
             try:
-                code_list.append(
-                    MedicalCondition(row[CATEGORY_CODE], row[COMPLETE_CODE], row[NAME])
-                )
+                condition = MedicalCondition(row[COMPLETE_CODE], row[NAME])
+                if letter_prefix and not condition.icd_code.startswith(letter_prefix):
+                    continue
+                code_list.append(condition)
             except ValueError as error:
                 raise ValueError(
                     f"{filename} contains a non-integer value on line: {line_number}.\n"
@@ -70,9 +61,10 @@ def read_conditions_from_file(max_size: float = math.inf) -> List[MedicalConditi
 
 
 def read_categories_from_file(
+    filename: Optional[str] = "icd_categories.csv",
     max_size: float = math.inf,
-) -> List[MedicalConditionCategory]:
-    filename = "icd_categories.csv"
+    letter_prefix: Optional[str] = None,
+) -> List[MedicalCondition]:
     with open(filename, mode="rt", encoding="utf-8", newline="\n") as csv_file:
         code_reader = csv.reader(
             csv_file,
@@ -82,7 +74,10 @@ def read_categories_from_file(
             if line_number > max_size:
                 break
             try:
-                code_list.append(MedicalConditionCategory(row[0], row[1]))
+                condition = MedicalCondition(row[0], row[1])
+                if letter_prefix and not condition.icd_code.startswith(letter_prefix):
+                    continue
+                code_list.append(condition)
             except ValueError as error:
                 raise ValueError(
                     f"{filename} contains a non-integer value on line: {line_number}.\n"
@@ -100,17 +95,40 @@ def read_categories_from_file(
 #         print(insert_into(table_name, columns, map(str, iter(category_input))), file=f)
 
 
-# def write_conditions_to_file(code_data: List[Code]):
-#     columns = ["icd_code", "category_id", "condition_name"]
-#     table_name = "condition"
-#     data = (code.insert for code in code_data)
-#     with open("insert_conditions.sql", "wt", encoding="utf-8") as f:
-#         print(insert_into(table_name, columns, map(str, data)), file=f)
+def write_conditions_to_file(code_data: List[MedicalCondition]):
+    columns = code_data[0].columns
+    table_name = code_data[0].table_name
+    data = (code.insert for code in code_data)
+    with open("insert_conditions.sql", "wt", encoding="utf-8") as f:
+        print(
+            insert_into(table_name, columns, map(str, data)).replace("None", "DEFAULT"),
+            file=f,
+        )
+
+
+def remove_duplicates(codes: List[MedicalCondition], seen_set: Optional[Set] = None):
+    if seen_set is None:
+        seen_set = set()
+    res = []
+    seen_set_add = seen_set.add
+    for code in codes:
+        if code.icd_code not in seen_set:
+            seen_set_add(code.icd_code)
+            res.append(code)
+    return res
+
+
+def read_combined_conditions() -> List[MedicalCondition]:
+    codes = read_conditions_from_file(filename="icd_codes_selected.csv")
+    codes.extend(read_categories_from_file(filename="icd_categories_selected.csv"))
+    return remove_duplicates(codes)
 
 
 if __name__ == "__main__":
-    codes = read_categories_from_file()
-    pprint(codes)
+    uniques = read_combined_conditions()
+    print(len(uniques))
+    # uniques.sort()
+    # write_conditions_to_file(uniques)
     # TODO: Instead of reading categories from icd_code.csv, read it from icd_categories.csv
 
     # write_categories_to_file(codes)
