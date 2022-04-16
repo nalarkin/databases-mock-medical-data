@@ -105,7 +105,7 @@ class MockGeneratorTest(unittest.TestCase):
         for immunized_employee in mock_gen.immunized_employees:
             with self.subTest(immunized_employee=immunized_employee):
                 self.assertIn(immunized_employee.emp_id, employees)
-                self.assertIn(immunized_employee.immunization_id, immunizations)
+                self.assertIn(immunized_employee.immun_id, immunizations)
 
     def test_immunized_patient_relationships(self):
         mock_gen = MockGenerator(mock_conditions, MockGeneratorConfig())
@@ -116,7 +116,7 @@ class MockGeneratorTest(unittest.TestCase):
         for immunized_patient in mock_gen.immunized_patients:
             with self.subTest(immunized_patient=immunized_patient):
                 self.assertIn(immunized_patient.patient_id, patients)
-                self.assertIn(immunized_patient.immunization_id, immunizations)
+                self.assertIn(immunized_patient.immun_id, immunizations)
 
     def test_archived_file_relationships(self):
         mock_gen = MockGenerator(mock_conditions, MockGeneratorConfig())

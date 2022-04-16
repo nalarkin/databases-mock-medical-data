@@ -10,6 +10,7 @@ import re
 from faker import Faker
 
 from auto_increment import AutoIncrement
+from data_dependency_graph import build_reverse_topological_sort, build_topological_sort
 from icd import (
     MedicalCondition,
     build_condition_insert_statement,
@@ -98,6 +99,10 @@ def build_gender_dict():
 
 def random_company_name():
     return fake.company()
+
+
+def random_s3_id():
+    return fake.unique.uuid4()
 
 
 gender_options = OrderedDict(build_gender_dict())
@@ -247,6 +252,11 @@ def random_in_network() -> str:
     return fake.boolean(chance_of_getting_true=80)
 
 
+def random_drug_dose() -> str:
+    units = ["mg", "mcg", "g", "mg/mL"]
+    return f"{fake.random.randint(2, 500)} {fake.random_element(elements=units)}"
+
+
 def get_attributes(cls, excluded=None):
     if excluded is None:
         excluded = []
@@ -325,7 +335,7 @@ class InsuranceProvider:
     )
     insurance_name: str = field(default_factory=random_company_name)
     policy_number: str = field(default_factory=random_policy_number)
-    is_in_network: bool = field(default_factory=random_in_network)
+    in_network: bool = field(default_factory=random_in_network)
     table_name: str = field(default="insurance_providers", init=False)
 
 
@@ -335,8 +345,7 @@ class ArchivedFile:
     emp_id: int
     file_id: int = field(default_factory=lambda: auto_id.next_id("ArchivedFile"))
     file_name: str = field(default_factory=random_file)
-    # TODO: Do we want to use mock blobs?
-    file_blob: str = field(default=None)
+    s3_id: str = field(default_factory=random_s3_id)
     table_name: str = field(default="archived_files", init=False)
 
 
@@ -388,7 +397,7 @@ class Immunization:
 
 @dataclass
 class ImmunizedEmployee:
-    immunization_id: int
+    immun_id: int
     emp_id: int
     table_name: str = field(default="immunized_employees", init=False)
 
@@ -397,13 +406,13 @@ def generate_immunized_employees(
     immunization: Immunization, employee: Employee
 ) -> ImmunizedEmployee:
     return ImmunizedEmployee(
-        immunization_id=immunization.immunization_id, emp_id=employee.emp_id
+        immun_id=immunization.immunization_id, emp_id=employee.emp_id
     )
 
 
 @dataclass
 class ImmunizedPatient:
-    immunization_id: int
+    immun_id: int
     patient_id: int
     table_name: str = field(default="immunized_patients", init=False)
 
@@ -412,7 +421,7 @@ def generate_immunized_patients(
     immunization: Immunization, patient: Patient
 ) -> ImmunizedPatient:
     return ImmunizedPatient(
-        immunization_id=immunization.immunization_id, patient_id=patient.patient_id
+        immun_id=immunization.immunization_id, patient_id=patient.patient_id
     )
 
 
@@ -508,6 +517,7 @@ class Prescription:
     # TODO: come up with better drug name generator?
     drug_name: str = field(default_factory=random_company_name, repr=False)
     quantity: int = field(default_factory=lambda: fake.random.randint(1, 180))
+    dose: str = field(default_factory=random_drug_dose)
     refills: int = field(default_factory=lambda: fake.random.randint(0, 7))
     instructions: Optional[str] = field(
         default_factory=lambda: random_notes(90, 5), repr=False
@@ -566,7 +576,7 @@ class LabReport:
     file_id: int
     app_id: int
     report_id: int = field(default_factory=lambda: auto_id.next_id("LabReport"))
-    info: Optional[str] = field(default_factory=lambda: random_notes(80, 2))
+    # info: Optional[str] = field(default_factory=lambda: random_notes(80, 2))
     result_info: Optional[str] = field(default_factory=lambda: random_notes(80, 3))
     table_name: str = field(default="lab_reports", init=False)
 
@@ -1075,14 +1085,47 @@ def build_intro_delete_statements(mock: MockGenerator):
     return [f"DELETE FROM {table_name};" for table_name in table_names]
 
 
+def dependency_sort(tables: List[str]) -> List[str]:
+    order = {table_name: idx for idx, table_name in enumerate(build_topological_sort())}
+    return list(sorted(tables, key=lambda table_name: order.get(table_name, -1)))
+
+
+def reverse_dependency_sort(tables: List[str]) -> List[str]:
+    order = {
+        table_name: idx
+        for idx, table_name in enumerate(build_reverse_topological_sort())
+    }
+    return list(sorted(tables, key=lambda table_name: order.get(table_name, -1)))
+
+
+def build_truncate_statement(mock: MockGenerator):
+    tables_to_insert = reverse_dependency_sort(get_attributes(mock, ["config"]))
+    return f"TRUNCATE {', '.join(table_name for table_name in tables_to_insert)};\n"
+
+
+def build_drop_table_statement():
+    config = MockGeneratorConfig(prescription_count=3)
+    conditions = read_combined_conditions()
+    mock = MockGenerator(conditions, config)
+    tables_to_insert = reverse_dependency_sort(get_attributes(mock, ["config"]))
+    statements = [
+        f"TRUNCATE {', '.join(table_name for table_name in tables_to_insert)};\n"
+    ]
+    statements.extend(
+        f"DROP TABLE {', '.join(table_name for table_name in tables_to_insert)};\n"
+    )
+    return "".join(statements)
+
+
 def generate_mock_data_and_write_to_file(config: Optional[MockGeneratorConfig] = None):
     if config is None:
         config = MockGeneratorConfig(prescription_count=3)
     conditions = read_combined_conditions()
     mock = MockGenerator(conditions, config)
     tables_to_insert = get_attributes(mock, ["medical_conditions", "config"])
-    table_values_to_insert = get_attribute_values(mock, tables_to_insert)
-    insert_statements = build_intro_delete_statements(mock)
+    ordered_tables_to_insert = dependency_sort(tables_to_insert)
+    table_values_to_insert = get_attribute_values(mock, ordered_tables_to_insert)
+    insert_statements = [build_truncate_statement(mock)]
     insert_statements.append(build_condition_insert_statement(conditions))
     insert_statements.extend(build_all_insert_statements(table_values_to_insert))
     insert_statements.extend(build_auto_increment_statements(mock))
@@ -1091,4 +1134,5 @@ def generate_mock_data_and_write_to_file(config: Optional[MockGeneratorConfig] =
 
 
 if __name__ == "__main__":
+    # print(build_drop_table_statement())
     generate_mock_data_and_write_to_file()
