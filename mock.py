@@ -1136,4 +1136,20 @@ def generate_mock_data_and_write_to_file(config: Optional[MockGeneratorConfig] =
 
 if __name__ == "__main__":
     # print(build_drop_table_statement())
-    generate_mock_data_and_write_to_file()
+    generate_mock_data_and_write_to_file(
+        MockGeneratorConfig(
+            appointment_count=60,
+            patient_count=30,
+            employee_count=20,
+            prescription_count=50,
+            insurance_provider_count=15,
+            test_count=40,
+            archived_file_count=10,
+            lab_report_count=60,
+            exam_count=60,
+            specialized_lab_count=10,
+            referrable_doctor_count=10,
+            relative_count=20,
+            immunization_count=30,
+        )
+    )
