@@ -10,6 +10,16 @@ import re
 from faker import Faker
 
 from auto_increment import AutoIncrement
+from constants import (
+    BLOOD_TYPES,
+    DRUG_UNITS,
+    EMPLOYEE_ROLES,
+    GENDER_OPTION_CHANCE,
+    IMMUNIZATION_TYPES,
+    MEDICAL_SPECIALIZATIONS,
+    PRESCRIPTION_DRUG_NAMES,
+    RELATIVE_TYPES,
+)
 from data_dependency_graph import build_reverse_topological_sort, build_topological_sort
 from icd import (
     MedicalCondition,
@@ -89,14 +99,6 @@ def date_time_between(
     return format_date_with_time(date_time)
 
 
-def build_gender_dict():
-    options = [("Male", 0.4), ("Female", 0.4)]
-    other_genders = ["Genderfluid", "Nonbinary", "Transgender"]
-    for option in other_genders:
-        options.append((option, 0.2 / len(other_genders)))
-    return options
-
-
 def random_company_name():
     return fake.company()
 
@@ -105,43 +107,16 @@ def random_s3_id():
     return fake.unique.uuid4()
 
 
-gender_options = OrderedDict(build_gender_dict())
-
-
 def random_gender() -> str:
-    return fake.random_element(elements=gender_options)
+    return fake.random_element(elements=GENDER_OPTION_CHANCE)
 
 
 def random_role() -> str:
-    options = [
-        "Physician General Practitioner",
-        "Nurse",
-        "Orderly",
-        "Receptionist",
-        "Physician Assistant",
-    ]
-    return fake.random_element(elements=options)
+    return fake.random_element(elements=EMPLOYEE_ROLES)
 
 
 def business_slogan() -> str:
     return fake.bs()
-
-
-IMMUNIZATION_TYPES = [
-    "Tuberculosis",
-    "Hepatitis B",
-    "Poliovirus",
-    "Diphtheria",
-    "Tetanus",
-    "Pertussis",
-    "Haemophilus Influenza Type B",
-    "Pneumococcal diseases",
-    "Rotavirus",
-    "Measles",
-    "Mumps",
-    "Rubella",
-    "Human papillomavirus",
-]
 
 
 def random_immunization() -> str:
@@ -149,65 +124,11 @@ def random_immunization() -> str:
 
 
 def random_specialization() -> str:
-    options = [
-        "Allergy",
-        "Anesthesia",
-        "Bariatric Medicine/Surgery",
-        "Burn/Trauma",
-        "Cardiac Catheterization",
-        "Cardiology",
-        "Cardiovascular Surgery",
-        "Colorectal Surgery",
-        "Dermatology",
-        "Electrophysiology",
-        "Emergency Medicine",
-        "Endocrinology",
-        "Family Practice",
-        "Gastroenterology",
-        "General Surgery",
-        "Geriatrics",
-        "Gynecologic Oncology",
-        "Hematology/Oncology",
-        "Hepatobiliary",
-        "Infectious Disease",
-        "Internal Medicine",
-        "Neonatology",
-        "Nephrology",
-        "Neurology",
-        "Neurosurgery",
-        "Nuclear Medicine",
-        "Obstetrics & Gynecology",
-        "Occupational Medicine",
-        "Ophthalmology",
-        "Oral Surgery",
-        "Orthopedics",
-        "Otolaryngology / Head & Neck Surgery",
-        "Pain Management",
-        "Palliative Care",
-        "Pain Management",
-        "Palliative Care",
-        "Pathology: Surgical & Anatomic",
-        "Pediatrics",
-        "Pediatric Surgery",
-        "Psychiatry",
-    ]
-    return fake.random_element(elements=options)
+    return fake.random_element(elements=MEDICAL_SPECIALIZATIONS)
 
 
 def random_relative_type():
-    options = [
-        "sister",
-        "brother",
-        "mother",
-        "father",
-        "grandmother",
-        "grandfather",
-        "aunt",
-        "uncle",
-        "great-grandmother",
-        "great-grandfather",
-    ]
-    return fake.random_element(elements=options)
+    return fake.random_element(elements=RELATIVE_TYPES)
 
 
 def random_notes(chance=60, sentences=3) -> Optional[str]:
@@ -228,8 +149,7 @@ def random_covid_exam():
 
 
 def random_blood_type():
-    blood_types = ["A+", "B+", "AB+", "O+", "A-", "B-", "AB-", "O-"]
-    return fake.random_element(elements=blood_types)
+    return fake.random_element(elements=BLOOD_TYPES)
 
 
 def random_blood_sugar():
@@ -253,8 +173,25 @@ def random_in_network() -> str:
 
 
 def random_drug_dose() -> str:
-    units = ["mg", "mcg", "g", "mg/mL"]
-    return f"{fake.random.randint(2, 500)} {fake.random_element(elements=units)}"
+    return f"{fake.random.randint(2, 500)} {fake.random_element(elements=DRUG_UNITS)}"
+
+
+def random_drug_name() -> str:
+    return fake.random_element(elements=PRESCRIPTION_DRUG_NAMES)
+
+
+def generate_random_appointment_date() -> str:
+    start_dates = OrderedDict(
+        [
+            (timedelta(weeks=(-52)), 0.2),
+            (timedelta(weeks=(-12)), 0.3),
+            (timedelta(days=(-3)), 0.5),
+        ]
+    )
+    return date_time_between(
+        start_date=fake.random_element(elements=start_dates),
+        simple=False,
+    )
 
 
 def get_attributes(cls, excluded=None):
@@ -516,7 +453,7 @@ class Prescription:
         default_factory=lambda: auto_id.next_id("Prescription")
     )
     # TODO: come up with better drug name generator?
-    drug_name: str = field(default_factory=random_company_name, repr=False)
+    drug_name: str = field(default_factory=random_drug_name, repr=False)
     quantity: int = field(default_factory=lambda: fake.random.randint(1, 180))
     dose: str = field(default_factory=random_drug_dose)
     refills: int = field(default_factory=lambda: fake.random.randint(0, 7))
@@ -557,13 +494,7 @@ class Appointment:
         default_factory=lambda: round(fake.random.uniform(96.0, 106.0), 2)
     )
     notes: Optional[str] = field(default_factory=lambda: random_notes())
-    date: str = field(
-        default_factory=lambda: date_time_between(
-            start_date=timedelta(weeks=(-7 * 12)),
-            end_date=timedelta(weeks=(-1)),
-            simple=False,
-        )
-    )
+    date: str = field(default_factory=generate_random_appointment_date)
     table_name: str = field(default="appointments", init=False)
 
 
