@@ -99,9 +99,18 @@ outgoing_edges = [
 
 def build_topological_sort() -> Deque:
     graph = DirectedGraph()
-    for origin, destinations in outgoing_edges:
-        for destination in destinations:
-            graph.add_edge(origin, destination)
+    for dependency, dependents in outgoing_edges:
+        for dependent in dependents:
+            graph.add_edge(dependency, dependent)
+    return graph.topological_sort()
+
+
+def build_reverse_topological_sort() -> Deque:
+    """Used for deleting tables"""
+    graph = DirectedGraph()
+    for dependency, dependents in outgoing_edges:
+        for dependent in dependents:
+            graph.add_edge(dependent, dependency)
     return graph.topological_sort()
 
 
