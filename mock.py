@@ -311,17 +311,18 @@ class Employee:
     def __post_init__(self):
         """This logic assigns the salary and medical license based on the randomly assigned role attribute"""
         if self.role in ["Receptionist", "Orderly"]:
-            self.salary = fake.random.randint(15_000, 80_000)
+            # multiply by 100 to store salary as integer instead of float by storing in base unit (cents)
+            self.salary = fake.random.randint(15_000 * 100, 80_000 * 100)
         elif self.role == "Nurse":
-            self.salary = fake.random.randint(54_000, 100_000)
+            self.salary = fake.random.randint(54_000 * 100, 100_000 * 100)
             self.medical_license_number = random_nurse_license()
             self.dea_number = random_dea_number()
         elif self.role == "Physician Assistant":
-            self.salary = fake.random.randint(94_000, 130_000)
+            self.salary = fake.random.randint(94_000 * 100, 130_000 * 100)
             self.medical_license_number = random_physician_assistant_license()
             self.dea_number = random_dea_number()
         elif self.role == "Physician General Practitioner":
-            self.salary = fake.random.randint(160_000, 260_000)
+            self.salary = fake.random.randint(160_000 * 100, 260_000 * 100)
             self.medical_license_number = random_physician_license()
             self.dea_number = random_dea_number()
         else:
@@ -1135,4 +1136,20 @@ def generate_mock_data_and_write_to_file(config: Optional[MockGeneratorConfig] =
 
 if __name__ == "__main__":
     # print(build_drop_table_statement())
-    generate_mock_data_and_write_to_file()
+    generate_mock_data_and_write_to_file(
+        MockGeneratorConfig(
+            appointment_count=60,
+            patient_count=30,
+            employee_count=20,
+            prescription_count=50,
+            insurance_provider_count=15,
+            test_count=40,
+            archived_file_count=10,
+            lab_report_count=60,
+            exam_count=60,
+            specialized_lab_count=10,
+            referrable_doctor_count=10,
+            relative_count=20,
+            immunization_count=30,
+        )
+    )
