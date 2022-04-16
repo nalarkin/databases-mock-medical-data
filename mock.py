@@ -10,7 +10,12 @@ import re
 from faker import Faker
 
 from auto_increment import AutoIncrement
-from icd import MedicalCondition, build_condition_insert_statement, read_combined_conditions, read_conditions_from_file
+from icd import (
+    MedicalCondition,
+    build_condition_insert_statement,
+    read_combined_conditions,
+    read_conditions_from_file,
+)
 from reader import insert_into
 
 fake = Faker()
@@ -1061,18 +1066,28 @@ def build_auto_increment_statements(mock: MockGenerator) -> List[str]:
     return statements
 
 
+def build_intro_delete_statements(mock: MockGenerator):
+    table_names = [
+        attr[0].table_name
+        for attr in get_attribute_values(mock, get_attributes(mock, ["config"]))
+        if attr
+    ]
+    return [f"DELETE FROM {table_name};" for table_name in table_names]
+
+
 def generate_mock_data_and_write_to_file(config: Optional[MockGeneratorConfig] = None):
     if config is None:
         config = MockGeneratorConfig(prescription_count=3)
     conditions = read_combined_conditions()
     mock = MockGenerator(conditions, config)
-    conditions_to_insert = build_condition_insert_statement(conditions)
     tables_to_insert = get_attributes(mock, ["medical_conditions", "config"])
     table_values_to_insert = get_attribute_values(mock, tables_to_insert)
-    insert_statements = build_all_insert_statements(table_values_to_insert)
+    insert_statements = build_intro_delete_statements(mock)
+    insert_statements.append(build_condition_insert_statement(conditions))
+    insert_statements.extend(build_all_insert_statements(table_values_to_insert))
     insert_statements.extend(build_auto_increment_statements(mock))
     postgres_statements = convert_to_postgres(insert_statements)
-    write_insert_statement([conditions_to_insert] + postgres_statements)
+    write_insert_statement(postgres_statements)
 
 
 if __name__ == "__main__":
