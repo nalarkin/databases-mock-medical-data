@@ -31,7 +31,7 @@ class MedicalCondition:
 
     @property
     def insert(self):
-        return (self.icd_code, self.name, self.parent_code)
+        return f"{(self.icd_code, self.name, self.parent_code)}"
 
 
 def read_conditions_from_file(
@@ -86,13 +86,18 @@ def read_categories_from_file(
         return code_list
 
 
-def write_conditions_to_file(code_data: List[MedicalCondition]):
+def build_condition_insert_statement(code_data: List[MedicalCondition]) -> str:
     columns = code_data[0].columns
     table_name = code_data[0].table_name
-    data = (code.insert for code in code_data)
+    data = (f"{code.insert}" for code in code_data)
+    return insert_into(table_name, columns, map(str, data)).replace("None", "DEFAULT")
+
+
+def write_conditions_to_file(code_data: List[MedicalCondition]):
+
     with open("insert_conditions.sql", "wt", encoding="utf-8") as f:
         print(
-            insert_into(table_name, columns, map(str, data)).replace("None", "DEFAULT"),
+            build_condition_insert_statement(code_data),
             file=f,
         )
 
@@ -130,7 +135,7 @@ if __name__ == "__main__":
     print(longest_name)
     print(len(longest_name))
     # uniques.sort()
-    # write_conditions_to_file(uniques)
+    write_conditions_to_file(uniques)
     # TODO: Instead of reading categories from icd_code.csv, read it from icd_categories.csv
 
     # write_categories_to_file(codes)
