@@ -6,25 +6,26 @@ See the following link for more: https://en.wikipedia.org/wiki/Topological_sorti
 """
 from collections import defaultdict
 from collections import deque
-from typing import Deque
+from pprint import pprint
+from typing import Deque, Iterable
 
 UNVISITED = "<UNVISITED>"
 VISITING = "<SEARCHING>"
 VISITED = "<VISITED>"
 
 
-class Graph:
+class DirectedGraph:
     def __init__(self):
         self.graph = defaultdict(list)
         self.nodes = {}
-        # self.visited = dict()
 
-    def add_edge(self, u, v):
-        self.graph[u].append(v)
-        self.nodes[u] = UNVISITED
-        self.nodes[v] = UNVISITED
+    def add_edge(self, origin, destination):
+        if origin != destination:
+            self.graph[origin].append(destination)
+            self.nodes[destination] = UNVISITED
+        self.nodes[origin] = UNVISITED
 
-    def dfs(self, node: str, queue: Deque):
+    def _dfs(self, node: str, queue: Deque):
         self.nodes[node] = VISITING
         for destination in self.graph[node]:
             if self.nodes[destination] == VISITING:
@@ -32,16 +33,16 @@ class Graph:
                     "Graph contains a cycle, unable to perform topological sort"
                 )
             if self.nodes[destination] == UNVISITED:
-                self.dfs(destination, queue)
+                self._dfs(destination, queue)
         self.nodes[node] = VISITED
         queue.appendleft(node)
 
-    def topological_sort(self) -> Deque:
+    def topological_sort(self) -> Iterable:
         queue = deque()
-        for node in self.nodes:
-            if self.nodes[node] == UNVISITED:
-                self.dfs(node, queue)
-        return queue
+        for node, search_status in self.nodes.items():
+            if search_status == UNVISITED:
+                self._dfs(node, queue)
+        return iter(queue)
 
 
 outgoing_edges = [
@@ -96,17 +97,17 @@ outgoing_edges = [
 ]
 
 
-def build_topological_sor() -> Deque:
-    g = Graph()
+def build_topological_sort() -> Deque:
+    graph = DirectedGraph()
     for origin, destinations in outgoing_edges:
         for destination in destinations:
-            g.add_edge(origin, destination)
-    return g.topological_sort()
+            graph.add_edge(origin, destination)
+    return graph.topological_sort()
 
 
 def print_topological_sort():
     print("Topological Sort")
-    print(" --> ".join(build_topological_sor()))
+    print(" --> ".join(build_topological_sort()))
 
 
 if __name__ == "__main__":
