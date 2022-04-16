@@ -1,4 +1,9 @@
-# Python program to print topological sorting of a DAG
+"""
+This sorts the table names by dependencies, in an order where we
+can insert data in order from left to right, and prevent foreign key constraint errors.
+
+See the following link for more: https://en.wikipedia.org/wiki/Topological_sorting
+"""
 from collections import defaultdict
 from collections import deque
 from typing import Deque
@@ -24,7 +29,7 @@ class Graph:
         for destination in self.graph[node]:
             if self.nodes[destination] == VISITING:
                 raise ValueError(
-                    "Graph contains a cycle, unable to do topological sort"
+                    "Graph contains a cycle, unable to perform topological sort"
                 )
             if self.nodes[destination] == UNVISITED:
                 self.dfs(destination, queue)
