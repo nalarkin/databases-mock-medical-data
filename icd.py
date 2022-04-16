@@ -128,15 +128,4 @@ def read_combined_conditions(
 
 
 if __name__ == "__main__":
-    uniques = read_combined_conditions("icd_categories.csv", "icd_codes.csv")
-    longest_name = ""
-    for code in uniques:
-        longest_name = max(longest_name, code.name, key=len)
-    print(longest_name)
-    print(len(longest_name))
-    # uniques.sort()
-    write_conditions_to_file(uniques)
-    # TODO: Instead of reading categories from icd_code.csv, read it from icd_categories.csv
-
-    # write_categories_to_file(codes)
-    # write_conditions_to_file(codes)
+    pass
