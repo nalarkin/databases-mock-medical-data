@@ -2,6 +2,7 @@
 from collections import OrderedDict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from pprint import pprint
 from string import ascii_uppercase
 from typing import List, Optional
 import re
@@ -9,7 +10,12 @@ import re
 from faker import Faker
 
 from auto_increment import AutoIncrement
-from icd import MedicalCondition, read_combined_conditions, read_conditions_from_file
+from icd import (
+    MedicalCondition,
+    build_condition_insert_statement,
+    read_combined_conditions,
+    read_conditions_from_file,
+)
 from reader import insert_into
 
 fake = Faker()
@@ -222,7 +228,7 @@ def random_blood_type():
 
 
 def random_blood_sugar():
-    return fake.random.randint(70, 120)
+    return f"{round(fake.random.uniform(70.0, 120.0), 2)} mg/dL"
 
 
 def random_member_id() -> str:
@@ -673,7 +679,7 @@ class CovidExam(ExamInterface):
 @dataclass
 class BloodExam(ExamInterface):
     blood_type: str = field(default_factory=random_blood_type)
-    blood_sugar: int = field(default_factory=random_blood_sugar)
+    blood_sugar: str = field(default_factory=random_blood_sugar)
     table_name: str = field(default="blood_exams", init=False)
 
 
@@ -1028,13 +1034,58 @@ def convert_to_postgres(insert_statements: List[str]) -> List[str]:
     return res
 
 
-def generate_mock_data_and_write_to_file():
-    config = MockGeneratorConfig(prescription_count=3)
+def build_auto_increment_statements(mock: MockGenerator) -> List[str]:
+    """
+    These statements are necessary to set the autoincrement generator to begin
+    at the correct place after mock data is inserted.
+    """
+    auto_increment_tables = [
+        (mock.patients, "patient_id"),
+        (mock.insurance_providers, "provider_id"),
+        (mock.employees, "emp_id"),
+        (mock.prescriptions, "prescription_id"),
+        (mock.relatives, "relative_id"),
+        (mock.referrals, "ref_id"),
+        (mock.immunizations, "immunization_id"),
+        (mock.appointments, "app_id"),
+        (mock.tests, "test_id"),
+        (mock.archived_files, "file_id"),
+        (mock.lab_reports, "report_id"),
+        (mock.exams, "exam_id"),
+        (mock.specialized_labs, "lab_id"),
+        (mock.referrable_doctors, "ref_doctor_id"),
+    ]
+    statements = ["/* UPDATE AUTOINCREMENT START VALUES BASED ON MOCK DATA INSERTS */"]
+    for table, table_id_name in auto_increment_tables:
+        if table:
+            assert hasattr(table[0], table_id_name)
+            table_size = len(table)
+            table_name = table[0].table_name
+            table_sequence_name = f"{table_name}_{table_id_name}_seq"
+            statements.append(f"select setval('{table_sequence_name}', {table_size});")
+    return statements
+
+
+def build_intro_delete_statements(mock: MockGenerator):
+    table_names = [
+        attr[0].table_name
+        for attr in get_attribute_values(mock, get_attributes(mock, ["config"]))
+        if attr
+    ]
+    return [f"DELETE FROM {table_name};" for table_name in table_names]
+
+
+def generate_mock_data_and_write_to_file(config: Optional[MockGeneratorConfig] = None):
+    if config is None:
+        config = MockGeneratorConfig(prescription_count=3)
     conditions = read_combined_conditions()
     mock = MockGenerator(conditions, config)
     tables_to_insert = get_attributes(mock, ["medical_conditions", "config"])
     table_values_to_insert = get_attribute_values(mock, tables_to_insert)
-    insert_statements = build_all_insert_statements(table_values_to_insert)
+    insert_statements = build_intro_delete_statements(mock)
+    insert_statements.append(build_condition_insert_statement(conditions))
+    insert_statements.extend(build_all_insert_statements(table_values_to_insert))
+    insert_statements.extend(build_auto_increment_statements(mock))
     postgres_statements = convert_to_postgres(insert_statements)
     write_insert_statement(postgres_statements)
 
