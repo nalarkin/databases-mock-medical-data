@@ -24,6 +24,15 @@ PRESCRIPTION_DRUG_NAMES = [
     "Rosuvastatin",
 ]
 
+INSURANCE_COMPANY_NAMES = [
+    "Health World",
+    "Purple Shield",
+    "Liberty Truth Medical",
+    "World Market",
+    "HealthMark",
+    "Highland Sons Mutual",
+]
+
 
 MEDICAL_SPECIALIZATIONS = [
     "Allergy",
