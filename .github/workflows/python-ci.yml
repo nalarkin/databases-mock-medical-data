@@ -37,5 +37,8 @@ jobs:
       - name: Ensure it matches format style
         run: python -m black . --check
         
+      - name: lint files
+        run: find . -path ./.venv -prune -o -name '*.py' -exec pylint {} \;
+        
       - name: Run tests
         run: python -m unittest
