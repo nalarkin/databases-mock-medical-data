@@ -1,10 +1,10 @@
 # pylint: skip-file
-from operator import attrgetter
 import random
 import re
 from collections import OrderedDict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from operator import attrgetter
 from pprint import pprint
 from string import ascii_uppercase
 from typing import List, Optional
@@ -874,9 +874,7 @@ class MockGenerator:
         tests_accepted = []
         for lab in self.specialized_labs:
             random_length = fake.random.randint(1, self.config.accepted_test_count_max)
-            for test in fake.random_elements(
-                elements=self.tests, unique=True, length=random_length
-            ):
+            for test in fake.random_elements(elements=self.tests, length=random_length):
                 tests_accepted.append(generate_test_accepted(lab, test))
         self.accepted_tests = self._get_uniques(
             "test_id", "lab_id", array=tests_accepted
@@ -889,7 +887,7 @@ class MockGenerator:
                 1, self.config.appointment_medical_conditions_count_max
             )
             for condition in fake.random_elements(
-                elements=self.medical_conditions, unique=True, length=random_length
+                elements=self.medical_conditions, length=random_length
             ):
                 conditions.append(
                     generate_appointment_medical_conditions(app, condition)

@@ -1,10 +1,11 @@
+"""This module handles importing the medical conditions, and writing them to files"""
+# pylint: disable=missing-function-docstring,missing-class-docstring
 import csv
-from dataclasses import dataclass, field
 import math
+from dataclasses import dataclass, field
 from typing import List, Optional, Set
 
 from reader import insert_into
-
 
 CATEGORY_CODE, VARIANT, COMPLETE_CODE, NAME, *_ = 0, 1, 2, 3, 4, 5
 
@@ -24,6 +25,7 @@ class MedicalCondition:
         if len(self.icd_code) == 3:
             return None
         self.parent_code = self.icd_code[: len(self.icd_code) - 1]
+        return None
 
     @property
     def columns(self):
@@ -95,10 +97,10 @@ def build_condition_insert_statement(code_data: List[MedicalCondition]) -> str:
 
 def write_conditions_to_file(code_data: List[MedicalCondition]):
 
-    with open("insert_conditions.sql", "wt", encoding="utf-8") as f:
+    with open("insert_conditions.sql", "wt", encoding="utf-8") as file:
         print(
             build_condition_insert_statement(code_data),
-            file=f,
+            file=file,
         )
 
 
