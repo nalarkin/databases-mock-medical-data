@@ -1,4 +1,5 @@
 """Provides domain-specific options that are randomly selected from during data generation."""
+
 from collections import OrderedDict
 
 PRESCRIPTION_DRUG_NAMES = [
@@ -33,6 +34,7 @@ INSURANCE_COMPANY_NAMES = [
     "HealthMark",
     "Highland Sons Mutual",
 ]
+
 
 
 MEDICAL_SPECIALIZATIONS = [
