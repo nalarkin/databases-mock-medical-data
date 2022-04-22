@@ -140,26 +140,40 @@ class MockGeneratorUniqueTest(unittest.TestCase):
         mock_gen = MockGenerator(
             mock_conditions,
             MockGeneratorConfig(
-                appointment_count=5, appointment_medical_conditions_count_max=250
+                appointment_count=5,
+                appointment_medical_conditions_count_max=len(mock_conditions),
             ),
         )
         mock_app_conditions = mock_gen.appointment_medical_conditions
-        counter = Counter((mock.app_id, mock.icd_code) for mock in mock_app_conditions)
-        for unique_pair, frequency in counter.items():
-            with self.subTest(unique_pair=unique_pair, frequency=frequency):
+        counter = Counter(mock.primary_key for mock in mock_app_conditions)
+        for primary_key, frequency in counter.items():
+            with self.subTest(primary_key=primary_key, frequency=frequency):
                 self.assertEqual(frequency, 1)
 
     def test_accepted_tests_uniqueness(self):
         mock_gen = MockGenerator(
             mock_conditions,
             MockGeneratorConfig(
-                specialized_lab_count=5, test_count=5, accepted_test_count_max=50
+                specialized_lab_count=5, test_count=5, accepted_test_count_max=5
             ),
         )
-        mock_app_conditions = mock_gen.accepted_tests
-        counter = Counter((mock.test_id, mock.lab_id) for mock in mock_app_conditions)
-        for unique_pair, frequency in counter.items():
-            with self.subTest(unique_pair=unique_pair, frequency=frequency):
+        accepted_tests = mock_gen.accepted_tests
+        counter = Counter(mock.primary_key for mock in accepted_tests)
+        for primary_key, frequency in counter.items():
+            with self.subTest(primary_key=primary_key, frequency=frequency):
+                self.assertEqual(frequency, 1)
+
+    def test_relative_conditions_uniqueness(self):
+        mock_gen = MockGenerator(
+            mock_conditions,
+            MockGeneratorConfig(
+                relative_count=5, relative_condition_max=len(mock_conditions)
+            ),
+        )
+        relative_conditions = mock_gen.relative_conditions
+        counter = Counter(mock.primary_key for mock in relative_conditions)
+        for primary_key, frequency in counter.items():
+            with self.subTest(primary_key=primary_key, frequency=frequency):
                 self.assertEqual(frequency, 1)
 
 

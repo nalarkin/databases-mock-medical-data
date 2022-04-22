@@ -4,9 +4,9 @@ can insert data in order from left to right, and prevent foreign key constraint 
 
 See the following link for more: https://en.wikipedia.org/wiki/Topological_sorting
 """
+# pylint: disable=missing-function-docstring
 from collections import defaultdict
 from collections import deque
-from pprint import pprint
 from typing import Deque, Iterable
 
 UNVISITED = "<UNVISITED>"
@@ -15,6 +15,8 @@ VISITED = "<VISITED>"
 
 
 class DirectedGraph:
+    """Used to track edges and perform topological sort"""
+
     def __init__(self):
         self.graph = defaultdict(list)
         self.nodes = {}

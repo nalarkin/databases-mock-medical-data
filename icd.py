@@ -5,7 +5,7 @@ import math
 from dataclasses import dataclass, field
 from typing import List, Optional, Set
 
-from reader import insert_into
+from writer import insert_into
 
 CATEGORY_CODE, VARIANT, COMPLETE_CODE, NAME, *_ = 0, 1, 2, 3, 4, 5
 

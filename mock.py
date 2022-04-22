@@ -30,7 +30,7 @@ from icd import (
     read_combined_conditions,
     read_conditions_from_file,
 )
-from reader import insert_into
+from writer import insert_into
 
 fake = Faker()
 Faker.seed(0)
@@ -320,6 +320,10 @@ class AcceptedTest:
     lab_id: int
     table_name: str = field(default="accepted_tests", init=False)
 
+    @property
+    def primary_key(self):
+        return (self.test_id, self.lab_id)
+
 
 def generate_test_accepted(lab: SpecializedLab, test: Test) -> AcceptedTest:
     return AcceptedTest(test_id=test.test_id, lab_id=lab.lab_id)
@@ -347,6 +351,10 @@ class ImmunizedEmployee:
     emp_id: int
     table_name: str = field(default="immunized_employees", init=False)
 
+    @property
+    def primary_key(self):
+        return (self.immun_id, self.emp_id)
+
 
 def generate_immunized_employees(
     immunization: Immunization, employee: Employee
@@ -361,6 +369,10 @@ class ImmunizedPatient:
     immun_id: int
     patient_id: int
     table_name: str = field(default="immunized_patients", init=False)
+
+    @property
+    def primary_key(self):
+        return (self.immun_id, self.patient_id)
 
 
 def generate_immunized_patients(
@@ -410,6 +422,10 @@ class InsuranceCover:
     policy_holder_name: str = field(default_factory=random_name)
     table_name: str = field(default="insurance_covers", init=False)
 
+    @property
+    def primary_key(self):
+        return (self.provider_id, self.patient_id)
+
 
 def generate_insurance_covers(
     patient: Patient, insurance_provider: InsuranceProvider
@@ -442,6 +458,10 @@ class RelativeCondition:
     relative_id: int
     icd_code: str
     table_name: str = field(default="relative_conditions", init=False)
+
+    @property
+    def primary_key(self):
+        return (self.relative_id, self.icd_code)
 
 
 def generate_relative_condition(
@@ -540,6 +560,10 @@ class AppointmentMedicalCondition:
     comment: Optional[str] = field(default_factory=lambda: random_notes(40, 2))
     table_name: str = field(default="appointment_medical_conditions", init=False)
 
+    @property
+    def primary_key(self):
+        return (self.app_id, self.icd_code)
+
 
 def generate_appointment_medical_conditions(
     appointment: Appointment, medical_condition: MedicalCondition
@@ -554,6 +578,10 @@ class AppointmentEmployee:
     emp_id: int
     app_id: int
     table_name: str = field(default="appointment_employees", init=False)
+
+    @property
+    def primary_key(self):
+        return (self.emp_id, self.app_id)
 
 
 def generate_appointment_employees(
@@ -570,6 +598,10 @@ class Diagnosis:
     icd_code: str
     comment: Optional[str] = field(default_factory=lambda: random_notes(90, 3))
     table_name: str = field(default="diagnoses", init=False)
+
+    @property
+    def primary_key(self):
+        return (self.emp_id, self.patient_id, self.app_id, self.icd_code)
 
 
 def generate_diagnosis(
@@ -591,6 +623,10 @@ class ReportCreator:
     report_id: int
     lab_id: int
     table_name: str = field(default="report_creators", init=False)
+
+    @property
+    def primary_key(self):
+        return (self.report_id, self.lab_id)
 
 
 def generate_report_creator(
@@ -732,7 +768,7 @@ class MockGenerator:
         self._generate_referrals()
         self._generate_archived_files()
         self._generate_medical_staff()
-        self._generate_tests_accepted()
+        self._generate_accepted_tests()
         self._generate_medical_conditions()
         self._generate_relative_conditions()
         self._generate_diagnosis()
@@ -774,9 +810,7 @@ class MockGenerator:
                 self.patients, self.insurance_providers, quantity=quantity
             )
         ]
-        self.insurance_covers = self._get_uniques(
-            "provider_id", "patient_id", array=self.insurance_covers
-        )
+        self.insurance_covers = self._get_uniques(self.insurance_covers)
 
     def _generate_relatives(self):
         random_patients = fake.random_choices(
@@ -800,14 +834,15 @@ class MockGenerator:
             *(iter(fake.random_choices(elements=arg, length=quantity)) for arg in args)
         )
 
-    def _get_uniques(self, *attrs, array):
+    def _get_uniques(self, array):
+        if array:
+            assert hasattr(array[0], "primary_key")
         seen = set()
         uniques = []
-        attributes = attrgetter(*attrs)
         for cls in array:
-            cls_attrs = attributes(cls)
-            if cls_attrs not in seen:
-                seen.add(cls_attrs)
+            primary_key = cls.primary_key
+            if primary_key not in seen:
+                seen.add(primary_key)
                 uniques.append(cls)
         return uniques
 
@@ -820,9 +855,7 @@ class MockGenerator:
                 quantity=self.config.immunized_patient_count,
             )
         ]
-        self.immunized_patients = self._get_uniques(
-            "immun_id", "patient_id", array=self.immunized_patients
-        )
+        self.immunized_patients = self._get_uniques(self.immunized_patients)
         self.immunized_employees = [
             generate_immunized_employees(immunization, employee)
             for immunization, employee in self._random_selector(
@@ -831,9 +864,7 @@ class MockGenerator:
                 quantity=self.config.immunized_patient_count,
             )
         ]
-        self.immunized_employees = self._get_uniques(
-            "immun_id", "emp_id", array=self.immunized_employees
-        )
+        self.immunized_employees = self._get_uniques(self.immunized_employees)
 
     def _generate_referrals(self):
         self.referrals = [
@@ -865,20 +896,16 @@ class MockGenerator:
                 elements=self.employees, unique=True, length=random_length
             ):
                 medical_staff.append(generate_appointment_employees(employee, app))
-        self.appointment_employees = self._get_uniques(
-            "app_id", "emp_id", array=medical_staff
-        )
+        self.appointment_employees = self._get_uniques(medical_staff)
 
-    def _generate_tests_accepted(self):
+    def _generate_accepted_tests(self):
         """Every appointment must have at least 1 medical staff"""
         tests_accepted = []
         for lab in self.specialized_labs:
             random_length = fake.random.randint(1, self.config.accepted_test_count_max)
-            for test in fake.random_elements(elements=self.tests, length=random_length):
+            for test in fake.random_elements(elements=self.tests, unique=True ,length=random_length):
                 tests_accepted.append(generate_test_accepted(lab, test))
-        self.accepted_tests = self._get_uniques(
-            "test_id", "lab_id", array=tests_accepted
-        )
+        self.accepted_tests = self._get_uniques(tests_accepted)
 
     def _generate_medical_conditions(self):
         conditions = []
@@ -887,14 +914,12 @@ class MockGenerator:
                 1, self.config.appointment_medical_conditions_count_max
             )
             for condition in fake.random_elements(
-                elements=self.medical_conditions, length=random_length
+                elements=self.medical_conditions, unique=True, length=random_length
             ):
                 conditions.append(
                     generate_appointment_medical_conditions(app, condition)
                 )
-        self.appointment_medical_conditions = self._get_uniques(
-            "app_id", "icd_code", array=conditions
-        )
+        self.appointment_medical_conditions = self._get_uniques(conditions)
 
     def _generate_relative_conditions(self):
         relative_conditions = []
@@ -906,9 +931,7 @@ class MockGenerator:
                 relative_conditions.append(
                     generate_relative_condition(relative, condition)
                 )
-        self.relative_conditions = self._get_uniques(
-            "relative_id", "icd_code", array=relative_conditions
-        )
+        self.relative_conditions = self._get_uniques(relative_conditions)
 
     def _generate_diagnosis(self):
         diagnosis = []
@@ -923,9 +946,7 @@ class MockGenerator:
                         random_employee, app, Patient(app.patient_id), condition
                     )
                 )
-        self.diagnoses = self._get_uniques(
-            "emp_id", "patient_id", "app_id", "icd_code", array=diagnosis
-        )
+        self.diagnoses = self._get_uniques(diagnosis)
 
     def _generate_lab_reports(self):
         self.lab_reports = [
@@ -948,9 +969,7 @@ class MockGenerator:
                 ),
             )
         ]
-        self.report_creators = self._get_uniques(
-            "report_id", "lab_id", array=self.report_creators
-        )
+        self.report_creators = self._get_uniques(self.report_creators)
 
     def _generate_exams(self):
         self.exams = [
@@ -972,7 +991,7 @@ class MockGenerator:
 
 def build_insert_statement(cls_array):
     first = cls_array[0]
-    attrs = get_attributes(first, ["format_date", "table_name"])
+    attrs = get_attributes(first, ["format_date", "table_name", "primary_key"])
     table_name = first.table_name
     values = (get_attribute_values(cls, attrs) for cls in cls_array)
     return insert_into(

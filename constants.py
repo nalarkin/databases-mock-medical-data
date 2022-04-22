@@ -1,3 +1,4 @@
+"""Provides domain-specific options that are randomly selected from during data generation."""
 from collections import OrderedDict
 
 PRESCRIPTION_DRUG_NAMES = [
