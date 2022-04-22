@@ -1,3 +1,5 @@
+"""Provides domain-specific options that are randomly selected from during data generation."""
+
 from collections import OrderedDict
 
 PRESCRIPTION_DRUG_NAMES = [
@@ -22,6 +24,15 @@ PRESCRIPTION_DRUG_NAMES = [
     "Escitalopram",
     "Fluoxetine",
     "Rosuvastatin",
+]
+
+INSURANCE_COMPANY_NAMES = [
+    "Health World",
+    "Purple Shield",
+    "Liberty Truth Medical",
+    "World Market",
+    "HealthMark",
+    "Highland Sons Mutual",
 ]
 
 

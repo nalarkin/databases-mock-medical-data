@@ -1,3 +1,5 @@
+"""Imitates auto-increment primary key"""
+# pylint: disable=missing-function-docstring
 from dataclasses import dataclass, field
 from typing import Dict
 from collections import Counter

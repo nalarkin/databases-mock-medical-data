@@ -1,9 +1,13 @@
 """Verifies the foregin key constraints of mock generated data."""
+# pylint: disable=missing-function-docstring,missing-class-docstring
 
 import unittest
+from collections import Counter
+
 from faker import Faker
+
 from icd import MedicalCondition
-from mock import MockGeneratorConfig, MockGenerator
+from mock import MockGenerator, MockGeneratorConfig
 
 mock_conditions = [MedicalCondition(f"{i}" * 3, f"A{i}") for i in range(5)] + [
     MedicalCondition(f"{i}" * 4, f"B{i}") for i in range(5)
@@ -75,11 +79,11 @@ class MockGeneratorTest(unittest.TestCase):
         employees = set(emp.emp_id for emp in mock_gen.employees)
         pharmacies = set(ph.pharmacy_address for ph in mock_gen.pharmacies)
 
-        for rx in mock_gen.prescriptions:
-            with self.subTest(rx=rx):
-                self.assertIn(rx.patient_id, patients)
-                self.assertIn(rx.emp_id, employees)
-                self.assertIn(rx.pharmacy_address, pharmacies)
+        for prescription in mock_gen.prescriptions:
+            with self.subTest(rx=prescription):
+                self.assertIn(prescription.patient_id, patients)
+                self.assertIn(prescription.emp_id, employees)
+                self.assertIn(prescription.pharmacy_address, pharmacies)
 
     def test_app_medical_condition_relationships(self):
         mock_gen = MockGenerator(mock_conditions, MockGeneratorConfig())
@@ -126,6 +130,51 @@ class MockGeneratorTest(unittest.TestCase):
             with self.subTest(archived_file=archived_file):
                 self.assertIn(archived_file.patient_id, patients)
                 self.assertIn(archived_file.emp_id, employees)
+
+
+class MockGeneratorUniqueTest(unittest.TestCase):
+    def setUp(self):
+        Faker.seed(0)
+
+    def test_medical_condition_uniqueness(self):
+        mock_gen = MockGenerator(
+            mock_conditions,
+            MockGeneratorConfig(
+                appointment_count=5,
+                appointment_medical_conditions_count_max=len(mock_conditions),
+            ),
+        )
+        mock_app_conditions = mock_gen.appointment_medical_conditions
+        counter = Counter(mock.primary_key for mock in mock_app_conditions)
+        for primary_key, frequency in counter.items():
+            with self.subTest(primary_key=primary_key, frequency=frequency):
+                self.assertEqual(frequency, 1)
+
+    def test_accepted_tests_uniqueness(self):
+        mock_gen = MockGenerator(
+            mock_conditions,
+            MockGeneratorConfig(
+                specialized_lab_count=5, test_count=5, accepted_test_count_max=5
+            ),
+        )
+        accepted_tests = mock_gen.accepted_tests
+        counter = Counter(mock.primary_key for mock in accepted_tests)
+        for primary_key, frequency in counter.items():
+            with self.subTest(primary_key=primary_key, frequency=frequency):
+                self.assertEqual(frequency, 1)
+
+    def test_relative_conditions_uniqueness(self):
+        mock_gen = MockGenerator(
+            mock_conditions,
+            MockGeneratorConfig(
+                relative_count=5, relative_condition_max=len(mock_conditions)
+            ),
+        )
+        relative_conditions = mock_gen.relative_conditions
+        counter = Counter(mock.primary_key for mock in relative_conditions)
+        for primary_key, frequency in counter.items():
+            with self.subTest(primary_key=primary_key, frequency=frequency):
+                self.assertEqual(frequency, 1)
 
 
 if __name__ == "__main__":

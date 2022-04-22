@@ -1,7 +1,5 @@
-# pylint: skip-file
-
+# pylint: disable=missing-module-docstring
 from mock import MockGeneratorConfig, generate_mock_data_and_write_to_file
-
 
 if __name__ == "__main__":
     config = MockGeneratorConfig(

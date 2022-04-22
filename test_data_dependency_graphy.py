@@ -1,6 +1,8 @@
 """Verifies the foregin key constraints of mock generated data."""
+# pylint: disable=missing-function-docstring,missing-class-docstring
 
 import unittest
+
 from data_dependency_graph import DirectedGraph
 
 
