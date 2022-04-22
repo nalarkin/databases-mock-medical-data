@@ -71,8 +71,10 @@ def random_physician_license() -> str:
     return fake.unique.bothify(text="GP####")
 
 
-def random_phone() -> str:
-    return fake.unique.phone_number()
+def random_phone(chance: Optional[int] = 100) -> Optional[str]:
+    if fake.boolean(chance_of_getting_true=chance):
+        return fake.unique.phone_number()
+    return None
 
 
 def random_file() -> str:
@@ -230,6 +232,23 @@ class Patient:
     name: str = field(default_factory=random_name, repr=False)
     gender: str = field(default_factory=random_gender, repr=False)
     table_name: str = field(default="patients", init=False)
+
+
+@dataclass
+class EmergencyContact:
+    patient_id: int
+    name: str = field(default_factory=random_name)
+    phone_1: str = field(default_factory=random_phone)
+    phone_2: str = field(default_factory=lambda: random_phone(40))
+    table_name: str = field(default="emergency_contacts", init=False)
+
+    @property
+    def primary_key(self):
+        return (self.patient_id, self.name)
+
+
+def generate_emergency_contact(patient: Patient) -> EmergencyContact:
+    return EmergencyContact(patient_id=patient.patient_id)
 
 
 @dataclass
@@ -707,6 +726,7 @@ class MockGeneratorConfig:
     diagnosis_count_max: int = field(default=2)
     appointment_medical_conditions_count_max: int = field(default=2)
     relative_condition_max: int = field(default=2)
+    emergency_contact_max: int = field(default=3)
 
 
 @dataclass
@@ -757,6 +777,7 @@ class MockGenerator:
     relative_conditions: List[RelativeCondition] = field(
         init=False, default_factory=list
     )
+    emergency_contacts: List[EmergencyContact] = field(init=False, default_factory=list)
 
     def __post_init__(self):
         self._generate_independent_schema()
@@ -771,6 +792,7 @@ class MockGenerator:
         self._generate_accepted_tests()
         self._generate_medical_conditions()
         self._generate_relative_conditions()
+        self._generate_emergency_contacts()
         self._generate_diagnosis()
         self._generate_lab_reports()
         self._generate_conducted_bys()
@@ -897,6 +919,15 @@ class MockGenerator:
             ):
                 medical_staff.append(generate_appointment_employees(employee, app))
         self.appointment_employees = self._get_uniques(medical_staff)
+
+    def _generate_emergency_contacts(self):
+        """Every appointment must have at least 1 medical staff"""
+        emergency_contacts = []
+        for patient in self.patients:
+            random_length = fake.random.randint(1, self.config.emergency_contact_max)
+            for _ in range(random_length):
+                emergency_contacts.append(generate_emergency_contact(patient))
+        self.emergency_contacts = self._get_uniques(emergency_contacts)
 
     def _generate_accepted_tests(self):
         """Every appointment must have at least 1 medical staff"""
@@ -1129,7 +1160,7 @@ if __name__ == "__main__":
     # print(build_drop_table_statement())
     generate_mock_data_and_write_to_file(
         MockGeneratorConfig(
-            appointment_count=60,
+            appointment_count=180,
             patient_count=30,
             insurance_cover_count=30,
             employee_count=20,

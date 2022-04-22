@@ -21,13 +21,13 @@ class DirectedGraph:
         self.graph = defaultdict(list)
         self.nodes = {}
 
-    def add_edge(self, origin, destination):
+    def add_edge(self, origin, destination) -> None:
         if origin != destination:
             self.graph[origin].append(destination)
             self.nodes[destination] = UNVISITED
         self.nodes[origin] = UNVISITED
 
-    def _dfs(self, node: str, queue: Deque):
+    def _dfs(self, node: str, queue: Deque) -> None:
         self.nodes[node] = VISITING
         for destination in self.graph[node]:
             if self.nodes[destination] == VISITING:
@@ -47,6 +47,11 @@ class DirectedGraph:
         return iter(queue)
 
 
+# pylint: disable=pointless-string-statement
+"""
+[vertex_a, [vertex_b, vertex_c]] means that vertex_b and vertex_c depend 
+on vertex_a to be created before vertex_b and vertex_c can be created
+"""
 outgoing_edges = [
     [
         "appointments",
@@ -89,6 +94,7 @@ outgoing_edges = [
             "prescriptions",
             "relatives",
             "referrals",
+            "emergency_contacts",
         ],
     ],
     ["pharmacies", ["prescriptions"]],

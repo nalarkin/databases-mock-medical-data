@@ -24,6 +24,7 @@ class MockGeneratorTest(unittest.TestCase):
             provider.provider_id for provider in mock_gen.insurance_providers
         )
         patient_ids = set(patient.patient_id for patient in mock_gen.patients)
+        self.assertGreater(len(mock_gen.insurance_covers), 0)
         for covered_by in mock_gen.insurance_covers:
             with self.subTest(covered_by=covered_by):
                 self.assertIn(covered_by.patient_id, patient_ids)
@@ -37,6 +38,8 @@ class MockGeneratorTest(unittest.TestCase):
         conditions = set(
             condition.icd_code for condition in mock_gen.medical_conditions
         )
+        self.assertGreater(len(mock_gen.diagnoses), 0)
+
         for diagnosis in mock_gen.diagnoses:
             with self.subTest(diag=diagnosis):
                 self.assertIn(diagnosis.patient_id, patients)
@@ -51,6 +54,8 @@ class MockGeneratorTest(unittest.TestCase):
         conditions = set(
             condition.icd_code for condition in mock_gen.medical_conditions
         )
+        self.assertGreater(len(mock_gen.lab_reports), 0)
+
         for report in mock_gen.lab_reports:
             with self.subTest(report=report):
                 self.assertIn(report.app_id, appointments)
@@ -61,6 +66,7 @@ class MockGeneratorTest(unittest.TestCase):
         mock_gen = MockGenerator(mock_conditions, MockGeneratorConfig())
         reports = set(r.report_id for r in mock_gen.lab_reports)
         labs = set(lab.lab_id for lab in mock_gen.specialized_labs)
+        self.assertGreater(len(mock_gen.report_creators), 0)
         for report_creator in mock_gen.report_creators:
             with self.subTest(report_creator=report_creator):
                 self.assertIn(report_creator.report_id, reports)
@@ -69,6 +75,7 @@ class MockGeneratorTest(unittest.TestCase):
     def test_appointment_relationships(self):
         mock_gen = MockGenerator(mock_conditions, MockGeneratorConfig())
         patients = set(patient.patient_id for patient in mock_gen.patients)
+        self.assertGreater(len(mock_gen.appointments), 0)
         for app in mock_gen.appointments:
             with self.subTest(app=app):
                 self.assertIn(app.patient_id, patients)
@@ -78,7 +85,7 @@ class MockGeneratorTest(unittest.TestCase):
         patients = set(patient.patient_id for patient in mock_gen.patients)
         employees = set(emp.emp_id for emp in mock_gen.employees)
         pharmacies = set(ph.pharmacy_address for ph in mock_gen.pharmacies)
-
+        self.assertGreater(len(mock_gen.prescriptions), 0)
         for prescription in mock_gen.prescriptions:
             with self.subTest(rx=prescription):
                 self.assertIn(prescription.patient_id, patients)
@@ -91,7 +98,7 @@ class MockGeneratorTest(unittest.TestCase):
         conditions = set(
             condition.icd_code for condition in mock_gen.medical_conditions
         )
-
+        self.assertGreater(len(mock_gen.appointment_medical_conditions), 0)
         for appointment_medical_condition in mock_gen.appointment_medical_conditions:
             with self.subTest(
                 appointment_medical_conditions=appointment_medical_condition
@@ -105,7 +112,7 @@ class MockGeneratorTest(unittest.TestCase):
             immunization.immunization_id for immunization in mock_gen.immunizations
         )
         employees = set(employee.emp_id for employee in mock_gen.employees)
-
+        self.assertGreater(len(mock_gen.immunized_employees), 0)
         for immunized_employee in mock_gen.immunized_employees:
             with self.subTest(immunized_employee=immunized_employee):
                 self.assertIn(immunized_employee.emp_id, employees)
@@ -117,6 +124,7 @@ class MockGeneratorTest(unittest.TestCase):
             immunization.immunization_id for immunization in mock_gen.immunizations
         )
         patients = set(patient.patient_id for patient in mock_gen.patients)
+        self.assertGreater(len(mock_gen.immunized_patients), 0)
         for immunized_patient in mock_gen.immunized_patients:
             with self.subTest(immunized_patient=immunized_patient):
                 self.assertIn(immunized_patient.patient_id, patients)
@@ -126,6 +134,7 @@ class MockGeneratorTest(unittest.TestCase):
         mock_gen = MockGenerator(mock_conditions, MockGeneratorConfig())
         employees = set(employee.emp_id for employee in mock_gen.employees)
         patients = set(patient.patient_id for patient in mock_gen.patients)
+        self.assertGreater(len(mock_gen.archived_files), 0)
         for archived_file in mock_gen.archived_files:
             with self.subTest(archived_file=archived_file):
                 self.assertIn(archived_file.patient_id, patients)
@@ -145,6 +154,7 @@ class MockGeneratorUniqueTest(unittest.TestCase):
             ),
         )
         mock_app_conditions = mock_gen.appointment_medical_conditions
+        self.assertGreater(len(mock_app_conditions), 0)
         counter = Counter(mock.primary_key for mock in mock_app_conditions)
         for primary_key, frequency in counter.items():
             with self.subTest(primary_key=primary_key, frequency=frequency):
@@ -158,6 +168,7 @@ class MockGeneratorUniqueTest(unittest.TestCase):
             ),
         )
         accepted_tests = mock_gen.accepted_tests
+        self.assertGreater(len(accepted_tests), 0)
         counter = Counter(mock.primary_key for mock in accepted_tests)
         for primary_key, frequency in counter.items():
             with self.subTest(primary_key=primary_key, frequency=frequency):
@@ -171,7 +182,20 @@ class MockGeneratorUniqueTest(unittest.TestCase):
             ),
         )
         relative_conditions = mock_gen.relative_conditions
+        self.assertGreater(len(relative_conditions), 0)
         counter = Counter(mock.primary_key for mock in relative_conditions)
+        for primary_key, frequency in counter.items():
+            with self.subTest(primary_key=primary_key, frequency=frequency):
+                self.assertEqual(frequency, 1)
+
+    def test_emergency_contact_uniqueness(self):
+        mock_gen = MockGenerator(
+            mock_conditions,
+            MockGeneratorConfig(patient_count=20, emergency_contact_max=30),
+        )
+        emergency_contacts = mock_gen.emergency_contacts
+        self.assertGreater(len(emergency_contacts), 0)
+        counter = Counter(mock.primary_key for mock in emergency_contacts)
         for primary_key, frequency in counter.items():
             with self.subTest(primary_key=primary_key, frequency=frequency):
                 self.assertEqual(frequency, 1)
