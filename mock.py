@@ -903,7 +903,9 @@ class MockGenerator:
         tests_accepted = []
         for lab in self.specialized_labs:
             random_length = fake.random.randint(1, self.config.accepted_test_count_max)
-            for test in fake.random_elements(elements=self.tests, unique=True ,length=random_length):
+            for test in fake.random_elements(
+                elements=self.tests, unique=True, length=random_length
+            ):
                 tests_accepted.append(generate_test_accepted(lab, test))
         self.accepted_tests = self._get_uniques(tests_accepted)
 
@@ -1135,11 +1137,6 @@ if __name__ == "__main__":
             insurance_provider_count=15,
             test_count=40,
             archived_file_count=30,
-            employee_count=20,
-            prescription_count=50,
-            insurance_provider_count=15,
-            test_count=40,
-            archived_file_count=10,
             lab_report_count=60,
             exam_count=60,
             specialized_lab_count=10,

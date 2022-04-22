@@ -36,7 +36,6 @@ INSURANCE_COMPANY_NAMES = [
 ]
 
 
-
 MEDICAL_SPECIALIZATIONS = [
     "Allergy",
     "Anesthesia",
