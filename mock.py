@@ -4,8 +4,6 @@ import re
 from collections import OrderedDict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from operator import attrgetter
-from pprint import pprint
 from string import ascii_uppercase
 from typing import List, Optional
 
@@ -25,10 +23,9 @@ from constants import (
 )
 from data_dependency_graph import build_reverse_topological_sort, build_topological_sort
 from icd import (
-    MedicalCondition,
     build_condition_insert_statement,
+    MedicalCondition,
     read_combined_conditions,
-    read_conditions_from_file,
 )
 from writer import insert_into
 
@@ -39,7 +36,8 @@ auto_id = AutoIncrement()
 
 
 def random_name() -> str:
-    # TODO: Potentially add custom name building, to prevent prefixes and suffixes from happening,
+    # TODO: Potentially add custom name building, to prevent prefixes and suffixes
+    #  from happening,
     return fake.name()
 
 
@@ -59,7 +57,10 @@ def random_nurse_license() -> str:
 
 def random_dea_number() -> str:
     """https://en.wikipedia.org/wiki/DEA_number"""
-    return f"{fake.bothify('?', letters='BM')}{fake.unique.bothify(text='?#######', letters=ascii_uppercase)}"
+    return (
+        f"{fake.bothify('?', letters='BM')}"
+        f"{fake.unique.bothify(text='?#######', letters=ascii_uppercase)}"
+    )
 
 
 def random_physician_assistant_license() -> str:
@@ -273,9 +274,11 @@ class Employee:
     table_name: str = field(default="employees", init=False)
 
     def __post_init__(self):
-        """This logic assigns the salary and medical license based on the randomly assigned role attribute"""
+        """This logic assigns the salary and medical license based on the randomly
+        assigned role attribute"""
         if self.role in ["Receptionist", "Orderly"]:
-            # multiply by 100 to store salary as integer instead of float by storing in base unit (cents)
+            # multiply by 100 to store salary as integer instead of float by storing
+            # in base unit (cents)
             self.salary = fake.random.randint(15_000 * 100, 80_000 * 100)
         elif self.role == "Nurse":
             self.salary = fake.random.randint(54_000 * 100, 100_000 * 100)
@@ -782,7 +785,7 @@ class MockGenerator:
     def __post_init__(self):
         self._generate_independent_schema()
         self._generate_appointments(self.config.appointment_count)
-        self._generate_covered_bys()
+        self._generate_insurance_covers()
         self._generate_relatives()
         self._generate_prescriptions()
         self._generate_immunizations()
@@ -795,7 +798,7 @@ class MockGenerator:
         self._generate_emergency_contacts()
         self._generate_diagnosis()
         self._generate_lab_reports()
-        self._generate_conducted_bys()
+        self._generate_report_creators()
         self._generate_exams()
         self._generate_exam_subclasses()
 
@@ -823,8 +826,9 @@ class MockGenerator:
             generate_appointment(patient) for patient in random_patients
         )
 
-    def _generate_covered_bys(self):
-        # TODO: Ensure there are no duplicates in this table, can possibly make covered by frozen, and use set
+    def _generate_insurance_covers(self):
+        # TODO: Ensure there are no duplicates in this table, can possibly make
+        #  covered by frozen, and use set
         quantity = self.config.insurance_cover_count
         self.insurance_covers = [
             generate_insurance_covers(patient, provider)
@@ -924,7 +928,7 @@ class MockGenerator:
         """Every appointment must have at least 1 medical staff"""
         emergency_contacts = []
         for patient in self.patients:
-            random_length = fake.random.randint(1, self.config.emergency_contact_max)
+            random_length = fake.random.randint(0, self.config.emergency_contact_max)
             for _ in range(random_length):
                 emergency_contacts.append(generate_emergency_contact(patient))
         self.emergency_contacts = self._get_uniques(emergency_contacts)
@@ -942,12 +946,16 @@ class MockGenerator:
 
     def _generate_medical_conditions(self):
         conditions = []
+        medical_condition_codes = [
+            condition for condition in self.medical_conditions if condition.is_code
+        ]
+        # print(f"{len(medical_condition_codes)=}")
         for app in self.appointments:
             random_length = fake.random.randint(
-                1, self.config.appointment_medical_conditions_count_max
+                0, self.config.appointment_medical_conditions_count_max
             )
             for condition in fake.random_elements(
-                elements=self.medical_conditions, unique=True, length=random_length
+                elements=medical_condition_codes, unique=True, length=random_length
             ):
                 conditions.append(
                     generate_appointment_medical_conditions(app, condition)
@@ -956,10 +964,13 @@ class MockGenerator:
 
     def _generate_relative_conditions(self):
         relative_conditions = []
+        medical_condition_codes = [
+            condition for condition in self.medical_conditions if condition.is_code
+        ]
         for relative in self.relatives:
             random_length = fake.random.randint(1, self.config.relative_condition_max)
             for condition in fake.random_elements(
-                elements=self.medical_conditions, unique=True, length=random_length
+                elements=medical_condition_codes, unique=True, length=random_length
             ):
                 relative_conditions.append(
                     generate_relative_condition(relative, condition)
@@ -968,11 +979,14 @@ class MockGenerator:
 
     def _generate_diagnosis(self):
         diagnosis = []
+        medical_condition_codes = [
+            condition for condition in self.medical_conditions if condition.is_code
+        ]
         for app in self.appointments:
             random_length = fake.random.randint(0, self.config.diagnosis_count_max)
             random_employee = fake.random_element(elements=self.employees)
             for condition in fake.random_elements(
-                elements=self.medical_conditions, unique=True, length=random_length
+                elements=medical_condition_codes, unique=True, length=random_length
             ):
                 diagnosis.append(
                     generate_diagnosis(
@@ -982,17 +996,20 @@ class MockGenerator:
         self.diagnoses = self._get_uniques(diagnosis)
 
     def _generate_lab_reports(self):
+        medical_condition_codes = [
+            condition for condition in self.medical_conditions if condition.is_code
+        ]
         self.lab_reports = [
             generate_lab_report(con, app, f)
             for con, app, f in self._random_selector(
-                self.medical_conditions,
+                medical_condition_codes,
                 self.appointments,
                 self.archived_files,
                 quantity=self.config.lab_report_count,
             )
         ]
 
-    def _generate_conducted_bys(self):
+    def _generate_report_creators(self):
         self.report_creators = [
             generate_report_creator(report, lab)
             for report, lab in zip(
@@ -1140,6 +1157,17 @@ def build_drop_table_statement():
     return "".join(statements)
 
 
+def print_table_sizes(tables_values_to_insert):
+    tables = {
+        table[0].table_name: len(table) for table in tables_values_to_insert if table
+    }
+    for table_name, count in sorted(
+        tables.items(), key=lambda item: (-item[1], item[0])
+    ):
+        print(f"{table_name:<22} size: {count}")
+    print(f"Total Rows: {sum(tables.values())}")
+
+
 def generate_mock_data_and_write_to_file(config: Optional[MockGeneratorConfig] = None):
     if config is None:
         config = MockGeneratorConfig(prescription_count=3)
@@ -1148,10 +1176,12 @@ def generate_mock_data_and_write_to_file(config: Optional[MockGeneratorConfig] =
     tables_to_insert = get_attributes(mock, ["medical_conditions", "config"])
     ordered_tables_to_insert = dependency_sort(tables_to_insert)
     table_values_to_insert = get_attribute_values(mock, ordered_tables_to_insert)
-    insert_statements = [build_truncate_statement(mock)]
+    print_table_sizes(table_values_to_insert)
+    insert_statements = ["BEGIN;", build_truncate_statement(mock)]
     insert_statements.append(build_condition_insert_statement(conditions))
     insert_statements.extend(build_all_insert_statements(table_values_to_insert))
     insert_statements.extend(build_auto_increment_statements(mock))
+    insert_statements.append("COMMIT;")
     postgres_statements = convert_to_postgres(insert_statements)
     write_insert_statement(postgres_statements)
 
@@ -1160,22 +1190,27 @@ if __name__ == "__main__":
     # print(build_drop_table_statement())
     generate_mock_data_and_write_to_file(
         MockGeneratorConfig(
-            appointment_count=180,
-            patient_count=30,
-            insurance_cover_count=30,
-            employee_count=20,
-            prescription_count=100,
+            appointment_count=1750,
+            appointment_medical_conditions_count_max=2,
+            archived_file_count=30,
+            diagnosis_count_max=1,
+            employee_count=200,
+            insurance_cover_count=50,
+            prescription_count=1500,
             insurance_provider_count=15,
             test_count=40,
-            archived_file_count=30,
             lab_report_count=60,
             exam_count=60,
             specialized_lab_count=10,
+            patient_count=400,
             referrable_doctor_count=10,
             referral_count=15,
             relative_count=20,
             immunization_count=10,
             immunized_employee_count=20,
             immunized_patient_count=80,
+            appointment_employee_count_max=2,
+            relative_condition_max=1,
+            emergency_contact_max=1,
         )
     )

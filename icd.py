@@ -7,7 +7,7 @@ from typing import List, Optional, Set
 
 from writer import insert_into
 
-CATEGORY_CODE, VARIANT, COMPLETE_CODE, NAME, *_ = 0, 1, 2, 3, 4, 5
+CATEGORY_CODE, VARIANT, COMPLETE_CODE, NAME, COMPLETE_NAME, *_ = 0, 1, 2, 3, 4, 5
 
 
 @dataclass(order=True)
@@ -15,12 +15,14 @@ class MedicalCondition:
     icd_code: str
     name: str = field(compare=False)
     parent_code: Optional[str] = field(default=None, init=False, compare=False)
+    is_code: bool = field(default=False, compare=False)
     table_name: str = field(default="medical_conditions", init=False, compare=False)
 
     def __post_init__(self):
         if len(self.icd_code) < 3:
             raise ValueError(
-                f"ICD code must be at least 3 characters; '{self.icd_code}' less than 3 characters"
+                f"ICD code must be at least 3 characters; '{self.icd_code}' less than "
+                f"3 characters"
             )
         if len(self.icd_code) == 3:
             return None
@@ -29,11 +31,11 @@ class MedicalCondition:
 
     @property
     def columns(self):
-        return ("icd_code", "name", "parent_code")
+        return ("icd_code", "name", "parent_code", "is_code")
 
     @property
     def insert(self):
-        return f"{(self.icd_code, self.name, self.parent_code)}"
+        return f"{(self.icd_code, self.name, self.parent_code, self.is_code)}"
 
 
 def read_conditions_from_file(
@@ -50,7 +52,8 @@ def read_conditions_from_file(
             if line_number > max_size:
                 break
             try:
-                condition = MedicalCondition(row[COMPLETE_CODE], row[NAME])
+                # pylint: disable=redefined-outer-name
+                condition = MedicalCondition(row[COMPLETE_CODE], row[COMPLETE_NAME])
                 if letter_prefix and not condition.icd_code.startswith(letter_prefix):
                     continue
                 code_list.append(condition)
@@ -76,6 +79,7 @@ def read_categories_from_file(
             if line_number > max_size:
                 break
             try:
+                # pylint: disable=redefined-outer-name
                 condition = MedicalCondition(row[0], row[1])
                 if letter_prefix and not condition.icd_code.startswith(letter_prefix):
                     continue
@@ -96,12 +100,13 @@ def build_condition_insert_statement(code_data: List[MedicalCondition]) -> str:
 
 
 def write_conditions_to_file(code_data: List[MedicalCondition]):
-
     with open("insert_conditions.sql", "wt", encoding="utf-8") as file:
+        print(f"BEGIN;\nTRUNCATE {code_data[0].table_name};", file=file)
         print(
             build_condition_insert_statement(code_data),
             file=file,
         )
+        print("COMMIT;", file=file)
 
 
 def remove_duplicates(codes: List[MedicalCondition], seen_set: Optional[Set] = None):
@@ -116,6 +121,13 @@ def remove_duplicates(codes: List[MedicalCondition], seen_set: Optional[Set] = N
     return res
 
 
+def mutate_is_code(medical_conditions: List[MedicalCondition]):
+    parent_categories = set(condition.parent_code for condition in medical_conditions)
+    # pylint: disable=redefined-outer-name
+    for condition in medical_conditions:
+        condition.is_code = condition.icd_code not in parent_categories
+
+
 def read_combined_conditions(
     category_file_name: Optional[str] = None,
     condition_file_name: Optional[str] = None,
@@ -126,8 +138,33 @@ def read_combined_conditions(
         condition_file_name = "icd_codes_selected.csv"
     codes = read_conditions_from_file(filename=condition_file_name)
     codes.extend(read_categories_from_file(filename=category_file_name))
-    return remove_duplicates(codes)
+    unique_codes = remove_duplicates(codes)
+    mutate_is_code(unique_codes)
+    return unique_codes
+
+
+# def write_update_names(conditions: List[MedicalCondition]):
+#     statements = ['BEGIN;', 'update medical_conditions mc set', 'name = mc2.name,',
+#     'from (values']
+#     for condition in conditions:
+#         statements.append(f"\t('{condition.icd_code}', '{condition.name}'),")
+#     statements[-1] = statements[-1].rstrip(',')
+#     statements.append(') as mc2(icd_code, name)')
+#     statements.append('where mc2.icd_code = mc.icd_code')
+#     statements.append('END;')
+#     with open("update_condition_names.sql", "wt", encoding="utf-8") as file:
+#         print('\n'.join(statements), file=file)
 
 
 if __name__ == "__main__":
-    pass
+    conditions = read_combined_conditions()
+    mutate_is_code(conditions)
+    names = set()
+    for condition in conditions:
+        val = (condition.name, condition.parent_code)
+        if val in names:
+            raise ValueError(f"{val} already exists")
+        names.add(val)
+    # print(tuple(c.icd_code for c in conditions if c.is_code))
+    conditions.sort()
+    # write_conditions_to_file(conditions)
