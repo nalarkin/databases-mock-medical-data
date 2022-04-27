@@ -5,7 +5,7 @@ from collections import OrderedDict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from string import ascii_uppercase
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from faker import Faker
 
@@ -557,6 +557,7 @@ class LabReport:
     icd_code: str
     file_id: int
     app_id: int
+    exam_id: int
     report_id: int = field(default_factory=lambda: auto_id.next_id("LabReport"))
     # info: Optional[str] = field(default_factory=lambda: random_notes(80, 2))
     result_info: Optional[str] = field(default_factory=lambda: random_notes(80, 3))
@@ -566,11 +567,13 @@ class LabReport:
 def generate_lab_report(
     medical_condition: MedicalCondition,
     appointment: Appointment,
+    exam: Union["BloodExam", "CovidExam", "AdministeredVaccine", None] = None,
     file: ArchivedFile = None,
 ) -> LabReport:
     return LabReport(
         icd_code=medical_condition.icd_code,
         file_id=file.file_id if file else None,
+        exam_id=exam.exam_id if exam else None,
         app_id=appointment.app_id,
     )
 
@@ -659,15 +662,14 @@ def generate_report_creator(
 
 @dataclass
 class Exam:
-    report_id: int
     app_id: int
     exam_id: int = field(default_factory=lambda: auto_id.next_id("Exam"))
     comment: Optional[str] = field(default_factory=lambda: random_notes(60, 2))
     table_name: str = field(default="exams", init=False)
 
 
-def generate_exam(report: LabReport, appointment: Appointment) -> Exam:
-    return Exam(report_id=report.report_id, app_id=appointment.app_id)
+def generate_exam(appointment: Appointment) -> Exam:
+    return Exam(app_id=appointment.app_id)
 
 
 @dataclass
@@ -797,10 +799,10 @@ class MockGenerator:
         self._generate_relative_conditions()
         self._generate_emergency_contacts()
         self._generate_diagnosis()
-        self._generate_lab_reports()
         self._generate_report_creators()
         self._generate_exams()
         self._generate_exam_subclasses()
+        self._generate_lab_reports()
 
     def _generate_independent_schema(self):
         self.patients = [Patient() for _ in range(self.config.patient_count)]
@@ -999,12 +1001,16 @@ class MockGenerator:
         medical_condition_codes = [
             condition for condition in self.medical_conditions if condition.is_code
         ]
+        combined_exams = (
+            self.blood_exams + self.covid_exams + self.administered_vaccines
+        )
         self.lab_reports = [
-            generate_lab_report(con, app, f)
-            for con, app, f in self._random_selector(
+            generate_lab_report(con, app, file=f, exam=exam)
+            for con, app, f, exam in self._random_selector(
                 medical_condition_codes,
                 self.appointments,
                 self.archived_files,
+                combined_exams,
                 quantity=self.config.lab_report_count,
             )
         ]
@@ -1023,9 +1029,9 @@ class MockGenerator:
 
     def _generate_exams(self):
         self.exams = [
-            generate_exam(report, app)
-            for report, app in self._random_selector(
-                self.lab_reports, self.appointments, quantity=self.config.exam_count
+            generate_exam(app)
+            for app in fake.random_elements(
+                elements=self.appointments, length=self.config.exam_count
             )
         ]
 

@@ -5,8 +5,7 @@ can insert data in order from left to right, and prevent foreign key constraint 
 See the following link for more: https://en.wikipedia.org/wiki/Topological_sorting
 """
 # pylint: disable=missing-function-docstring
-from collections import defaultdict
-from collections import deque
+from collections import defaultdict, deque
 from typing import Deque, Iterable
 
 UNVISITED = "<UNVISITED>"
@@ -75,10 +74,10 @@ outgoing_edges = [
             "referrals",
         ],
     ],
-    ["exams", ["administered_vaccines", "blood_exams", "covid_exams"]],
+    ["exams", ["administered_vaccines", "blood_exams", "covid_exams", "lab_reports"]],
     ["immunizations", ["immunized_employees", "immunized_patients"]],
     ["insurance_providers", ["insurance_covers"]],
-    ["lab_reports", ["exams", "report_creators"]],
+    ["lab_reports", ["report_creators"]],
     [
         "medical_conditions",
         ["appointment_medical_conditions", "diagnoses", "relative_conditions"],
